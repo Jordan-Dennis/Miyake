@@ -2,31 +2,32 @@ using DifferentialEquations
 using Random
 using Plots
 using PyCall
-using Pkg
+# using Pkg
+ENV["PYTHON"] = "/home/jordan/anaconda3/envs/ticktack/bin/python"
+# Pkg.build("PyCall")
 
 default(fmt = :png)
 Random.seed!(12)
-ENV["PYTHON"] = "~/anaconda3/envs/ticktack/bin/python"
 
 ticktack = pyimport("ticktack")
 onp = pyimport("numpy")
 
-#=
 cbm = ticktack.load_presaved_model("Guttler14", production_rate_units = "atoms/cm^2/s")
 cf = ticktack.fitting.CarbonFitter(cbm)
 cf.load_data("miyake12.csv")
-cf.prepare_function(production="miyake", fit_solar=false)
-cbm_mat = onp.array(cbm._matrix) # this is the same output as Python. I checked
-coeff = onp.array(cbm._production_coefficients)
+# cf.prepare_function(production="miyake", fit_solar=false)
+# cbm_mat = onp.array(cbm._matrix) # this is the same output as Python. I checked
+# coeff = onp.array(cbm._production_coefficients)
 
-function get_production_py(p, t)
-    production_rate = cf.production(t, p[1], p[2], p[3], p[4])
-    production_rate = cbm._convert_production_rate(production_rate)
-    production = onp.array(cbm._production_coefficients * production_rate)
+# function get_production_py(p, t)
+#     production_rate = cf.production(t, p[1], p[2], p[3], p[4])
+#     production_rate = cbm._convert_production_rate(production_rate)
+#     production = onp.array(cbm._production_coefficients * production_rate)
     
-    return production
-end
+#     return production
+# end
 
+#=
 function super_gaussian(t, start_time, duration, area)
         middle = start_time + duration / 2.
         height = area / duration
