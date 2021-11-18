@@ -2,39 +2,68 @@ using DifferentialEquations
 using Random
 using Plots
 using PyCall
-# using Pkg
+
+miyake12_csv_https = "https://raw.githubusercontent.com/"*
+    "SharmaLlama/ticktack/main/notebooks/datasets/miyake12.csv"  # Address for the raw .csv file
+
+# Seeting the coda ticktack environmnet as home directory
 ENV["PYTHON"] = "/home/jordan/anaconda3/envs/ticktack/bin/python"
-# Pkg.build("PyCall")
+default(fmt = :png);    # Don't fucking know 
+Random.seed!(12);       # Sets a seed for replicable results
+ticktack = pyimport("ticktack");    # Importing ticktack from the conda environmnet
+onp = pyimport("numpy");            # Importing numpy from the conda environmnet
 
-default(fmt = :png);
-Random.seed!(12);
+cbm = ticktack.load_presaved_model("Guttler14", # Loads the Guttler14 model
+    production_rate_units = "atoms/cm^2/s");    # Generates a CarbonBoxModel object
+cf = ticktack.fitting.CarbonFitter(cbm);        # Calls load_model to Generate a CarbonBoxModel
 
-ticktack = pyimport("ticktack");
-onp = pyimport("numpy");
+# Alright, I'm so fucking confused. load_presaved_model calls load_model which seems to be
+# the entire point of calling the CarbonFitter. Ohhh CarbonFitter is much more complex and 
+# includes the load_model, CarbonBoxModel
 
-cbm = ticktack.load_presaved_model("Guttler14", production_rate_units = "atoms/cm^2/s");
-cf = ticktack.fitting.CarbonFitter(cbm);
-cf.load_data("https://raw.githubusercontent.com/SharmaLlama/ticktack/main/notebooks/datasets/miyake12.csv");
-cf.prepare_function(production="miyake", fit_solar=false);
-cbm_mat = onp.array(cbm._matrix);
-coeff = onp.array(cbm._production_coefficients);
+cf.load_data(miyake12_csv_https);   # Loads the raw .csv from GitHub
+cf.prepare_function(production="miyake", fit_solar=false);  # Chooses miyake_event_fixed_solar as production function
+cbm_mat = onp.array(cbm._matrix);   # Creates a numpy.array from the CarbonBoxModel
+coeff = onp.array(cbm._production_coefficients);    # numpy.array from CarbonBoxModel
 
+"""
+Parameters:
+    p: list -> The parameters of the production function [start_date, duration, phi, area]
+    t: ...
+
+Returns:
+    production: numpy.array -> Don't ask me whats in it.
+"""
 function get_production_py(p, t)
-    production_rate = cf.production(t, p[1], p[2], p[3], p[4]);
+    # cf.production was assigned to a function, miyake_event_fixed_solar
+    # production_rate is the output from calling miyake_event_fixed_solar
+    production_rate = cf.production(t, p[1], p[2], p[3], p[4]); 
     production_rate = cbm._convert_production_rate(production_rate);
     production = onp.array(cbm._production_coefficients * production_rate);
 
     return production
 end
 
+"""
+Parameters:
+    t: ...
+    start_time: Point of initialisation of Miyake event model
+    duration: Length of the miyake event model
+    area: The area under the Miyake curve
+
+Returns:
+    Array -> A super gaussian model for the Miyake event
+"""
 function super_gaussian(t, start_time, duration, area)
         middle = start_time + duration / 2.;
         height = area / duration;
         return height .* exp.(- ((t .- middle) / (1. ./ 1.93516 * duration)) .^ 16.);
 end
 
+"""
+
+"""
 function miyake_event_fixed_solar(t, p)
-    # p = [start_date, duration, phi, area]
     height = super_gaussian(t, p[1], p[2], p[4]);
     prod = cf.steady_state_production .+ 0.18 .* cf.steady_state_production .* sin.(
         2 .* pi ./ 11 .* t .+ p[3]) .+ height;
@@ -66,7 +95,7 @@ function ticktack_deriv!(du, u, p, t)
     du[9] = test[9] + production[9];
     du[10] = test[10] + production[10];
     du[11] = test[11] + production[11];
-#     return du
+    return du
     # Diagnostics?
 #     print("Time: ", t, " Production ", get_production(p, t)[1]," du[1]: ",  du[1], "\n")
 end
