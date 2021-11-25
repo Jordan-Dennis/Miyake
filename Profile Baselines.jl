@@ -52,3 +52,5 @@ end
 # How does this compare as the size increases.
 # Array vs MAtrix vs Vector 
 # Does the order of multiplication affet the time.
+
+# I need to profile SparseMatrix (sparse(Matrix{Flaot64}(undef, 1, 1)))
