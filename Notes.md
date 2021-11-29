@@ -64,3 +64,9 @@ trialled.
 # Profiling
 I need to try __BenchmarkTools.jl__, although _Profiling_ is working for
 the smaller stuff.
+
+# Name Spaces
+I can use the following declaration pattern to fully static type in julia
+
+    local a::Int16 = 1;
+    
