@@ -1,34 +1,15 @@
-using Plots; gr();              # Moving Plot( ) into the namespace
-using SparseArrays;             # For sparse arrays used in the flux matrix
+# using Plots; gr();              # Moving Plot( ) into the namespace
 using HDF5;                     # for .hd5 file manipulation
 using DifferentialEquations;    # Provides a variety of differential solvers
 using Optim: optimize, LBFGS;   # Importing the optimisation library and solver #? :foward
-using LinearAlgebra: Diagonal;  # For efficient diagonal computational
-
-"""
-Read Data:
- - Reads the contents of file_name, which is assumed to have the extension .hd5
-
-Parameters:
- - file_name::String → The name of the file as it appears in the directory
-
-Returns:
- - F::Matrix{Float64} → The matrix of flux values in Gt/yr 
- - P::Vector{Float64} → A projection vector for the production function
-"""
-function read_data(file_name::String = "Guttler2014.hd5")::AbstractArray
-    local Guttler2014 = h5open(file_name);                      # Opening the HDF5 file
-    local F = Guttler2014["fluxes"][1:end, 1:end];              # Retrieving the flux matrix 
-    local P = Guttler2014["production coefficients"][1:end];    # Retrieving the projection of the production 
-    local N = Guttler2014["reservoir content"][1:end, 1:end];   # The C14 reserviour contents 
-    local λ = Guttler2014["decay coefficients"][1:end, 1:end];  # The decay constants as the diagonal elements
-    close(Guttler2014);                                         # Closing the file 
-    return sparse(F), P, N, Diagonal(λ);                        # Diagonal and sparse are for speed
-end
+using LinearAlgebra: Diagonal;  # Efficient Diagonal matrixes
 
 """
 Production:
- - The production function of C14.
+ - The production function of C14 as a Vector{Float64} based on the projection
+ of the production function into the system. The production function is stated 
+    here with a number of Parameters that can be retrieved from the Guttler
+    2014 paper
 
 Parameters:
  - year::Float64 → The current year 
@@ -36,71 +17,51 @@ Parameters:
 Returns:
  - Float64 → The production during the current year
 """
-function production(year::Float64)::Float64         # The production function
-    local P = 1.88;                                 # Steady State Production in ^{14}Ccm^{2}s^{-1}
-    local T = 11;                                   # Period of solar cycle years 
-    local Φ = 1.25;                                 # Phase of the solar cycle 
-    local P += 0.18 * P * sin(2 * π / T * y + Φ);   # Evaluating the production fucntion at the time
-    return P * 14.003242 / 6.022 * 5.11 * 31536. / 1.e5;    # Correction the units
+#! I want to get rid of all this extra parameter definition
+function production(year::Float64)::Vector{Float64}
+    local R = 1.88;                                     # Steady State Production in ^{14}Ccm^{2}s^{-1}
+    local T = 11;                                       # Period of solar cycle years 
+    local Φ = 1.25;                                     # Phase of the solar cycle 
+    local R += 0.18 * R * sin(2 * π / T * year + Φ);    # Evaluating the production fucntion at the time
+    return P * 3.747273140033743;                       # correcting the units
 end
 
-#// Mock objective function
-#? Should I create an overarching function to perform the entire optimisation
 """
-Troposphere Residual:
- - A function that is passed to the Optim.optimize function
+Calculate Euilibrium:
+ - Calculates the equilibrium position of the system given a target C14 concentration 
+ in the troposphere. This is done by optimising the residual squared function from the 
+ known steady state of the system. The optimise solver is BFGS and is passed a starting 
+ position of 6.0, which is a standard value for the reserviours. RSS takes a 
+ ::Vector{Float64} as an input as well as an output.
 
 Parameters:
- - TC14::Vector{Float64} → 
-"""
-function troposphere_residual(TC14::Vector{Float64})
-    rss = Vector{Float64}(undef, 1);    # A vector to house the sum of square 
-    rss[1] = (steady_state[2] - TC14) ^ 2; # TC14 is the target C14 and steady_state[2] is the equilibrium tropospher position  
-    return rss
-    #! still returning a Float64
-end
-
-troposphere_concentration = Vector{Float64}(undef, 1);  # An initial position Vector{Float64}
-troposphere_concentration[1] = 6.0; # The initial position. 6.0 is a standard choice
-
-optimized_residuals = optimize(troposphere_residual, troposphere_concentration, LBFGS());    #* optimisation from the Guttler2014
-#* I need beter variable names in this section 
-
-#// This is effectively the derivative function within run.
-"""
-∇:
- - Calculates the derivative given the system y::Vector{Float64} and
- time t::Float64
-
-Parameters:
- - y::Vector{Float64} → A vector specifying the position of the system
- - t::Float64 → The time in years.
-
+ - TO::Matrix{Float64} → The transfer operator of the system
+ - P::Vector{Float64} → The projection of the production function into the system
+ 
 Returns:
- - Vector{Float64} → The ∇ at the position y
+ - Float64 → The optimised tropospheric concentration
 """
-function ∇(y::Vector{Float64}, t::Float64)::Vector{Float64}
-    return transfer_operator * y + production(t);   # Calculates the derivative and returns
+function calculate_equilibrium(TO::Matrix{Float64}, P::Vector{Float64})
+    s = TO \ (-1.88 * P);                                       # Equlibriation as done by Brehm 
+    RSS(TC14::Vector{Float64})::Float64 = (s[2] - TC14[1]) .^ 2;# Residual sum of squares for troposphere
+    return optimize(RSS, [6.0], LBFGS());                       # 6.0 is a standard starting position for the reserviours
 end
 
-#! From here I start at steady_state
+# function main()::Vector{Float64}
+Guttler2014 = h5open("Guttler2014.hd5");              # Opening the HDF5 file
+F = Guttler2014["fluxes"][1:end, 1:end];              # Retrieving the flux matrix 
+P = Guttler2014["production coefficients"][1:end];    # Retrieving the projection of the production 
+N = Guttler2014["reservoir content"][1:end, 1:end];   # The C14 reserviour contents 
+λ = Guttler2014["decay coefficients"][1:end, 1:end];  # The decay constants as the diagonal elements
+close(Guttler2014);                                         # Closing the file 
 
-function main()
-    F, P, N, λ = read_data();
+F = F ./ transpose(N);                        # The proportion flux
+TO = F - Diagonal(vec(sum(F, dims=2))) - λ;   # Construncting the transfer operator
+equilibrium = calculate_equilibrium(TO, P);   # optimisation from the Guttler2014
+equilibrium = minimum(equilibrium);           # Getting the equilibrium position
+equilibrium = TO \ (-equilibrium * P);        # Equibration for the total system based on the guttler production equilibriation 
 
-    C14F = F ./ transpose(N);   # Proportion flow of C14 (axis=1 is RowSum)
-    NC14F = Vector{Float64}(undef, 11); # Empty vector with the goal of applying |> latter 
-    C14Content = sum(C14F, dims=2); # The C14 content in each reserviour 
-    for i in 1:11; NC14F[i] = C14Content[i]; end;    # Filling NC14F with the C14Content elements
+∇(y, p, t) = vec(TO * y + production(t) * P);   # Calculates the derivative and returns
 
-    #! I need to make a flow chart and work out how I can use pipe to achieve this without the random declarations 
-
-    NC14F = Diagonal(NC14F);  # C14 content of each reserviour
-    transfer_operator = transpose(C14F) - NC14F - λ;    #* I want to use the |> here
-
-    #// Mock equilibriate Brehm 
-    steady_state = transfer_operator \ (- 1.88 * P); #! The 1.88 is the steady state quoted in the paper 
-end
-ODESolution = DifferentialEquations. (∇, steady_state);
-
-# I need to set up the precompiliation down here 
+solve(ODEProblem(∇, equilibrium, (760.0, 790.0)), Rosenbrock23())   # Solving the ode
+# end 
