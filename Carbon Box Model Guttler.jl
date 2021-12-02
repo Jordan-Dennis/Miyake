@@ -46,8 +46,11 @@ Returns:
 """
 function calculate_equilibrium(TO::Matrix{Float64}, P::Vector{Float64})
     s = TO \ (-1.88 * P);                                       # Equlibriation as done by Brehm 
+    #* same python and julia output 
     RSS(TC14::Vector{Float64})::Float64 = (s[2] - TC14[1]) .^ 2;# Residual sum of squares for troposphere
+    
     return optimize(RSS, [6.0], LBFGS());                       # 6.0 is a standard starting position for the reserviours
+    #* python output is 0.842578987688031
 end
 
 # function main() # ::Vector{Float64}
@@ -59,13 +62,10 @@ close(Guttler2014);                                 # Closing the file
 #! fml everything has come through as a transpose because julia is smartter than python
 
 #? I think this is very inefficient and I should just use a for loop in the TO section
-λ = Diagonal([log(2) / 5730 for i in 1:11]);    # Constructing the decay matrix
-
-F = transpose(F) ./ N;                        # The proportion flux
-#* The same up until this point 
-
-TO = F - Diagonal(vec(sum(F, dims=2))) - λ;   # Construncting the transfer operator
-#! new_c_14 is the problem
+λ = Diagonal([log(2) / 5730 for i in 1:11]);            # Constructing the decay matrix
+F = transpose(F) ./ N;                                  # The proportion flux
+TO = transpose(F) - Diagonal(vec(sum(F, dims=2))) - λ;  # Construncting the transfer operator
+#* Should be the same until here
 
 #! need to check that minimum is returning the value I want.
 equilibrium = TO \ (- minimum(calculate_equilibrium(TO, P)) * P);   # optimisation from the Guttler2014
