@@ -50,18 +50,21 @@ function calculate_equilibrium(TO::Matrix{Float64}, P::Vector{Float64})
     return optimize(RSS, [6.0], LBFGS());                       # 6.0 is a standard starting position for the reserviours
 end
 
-function main()::Vector{Float64}
-    Guttler2014 = h5open("Guttler2014.hd5");              # Opening the HDF5 file
-    F = Guttler2014["fluxes"][1:end, 1:end];              # Retrieving the flux matrix 
-    P = Guttler2014["production coefficients"][1:end];    # Retrieving the projection of the production 
-    N = Guttler2014["reservoir content"][1:end, 1:end];   # The C14 reserviour contents 
-    λ = Guttler2014["decay coefficients"][1:end, 1:end];  # The decay constants as the diagonal elements
-    close(Guttler2014);                                         # Closing the file 
+function main() # ::Vector{Float64}
+    Guttler2014 = h5open("Guttler14.hd5");              # Opening the HDF5 file
+    F = Guttler2014["fluxes"][1:end, 1:end];            # Retrieving the flux matrix 
+    P = Guttler2014["production coefficients"][1:end];  # Retrieving the projection of the production 
+    N = Guttler2014["reservoir content"][1:end, 1:end]; # The C14 reserviour contents 
+    close(Guttler2014);                                 # Closing the file 
+
+    #? I think this is very inefficient and I should just use a for loop in the TO section
+    λ = Diagonal([log(2) / 5730 for i in 1:11]);    # Constructing the decay matrix
 
     #! I need to fix all this redefinition.
     #? I might just add the transfer operator to the .hd5 file since the goal is to profile solvers 
     F = F ./ transpose(N);                        # The proportion flux
     TO = F - Diagonal(vec(sum(F, dims=2))) - λ;   # Construncting the transfer operator
+
     equilibrium = calculate_equilibrium(TO, P);   # optimisation from the Guttler2014
     equilibrium = minimum(equilibrium);           # Getting the equilibrium position
     equilibrium = TO \ (-equilibrium * P);        # Equibration for the total system based on the guttler production equilibriation 
