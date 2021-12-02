@@ -16,3 +16,5 @@ instead of using local namespaces.
     - Dan also has a function for the super-gaussian
     - He then adds the two within another function 
     - Finally he converts the units in a 4th function 
+    - Dan calculates the super gaussian and then converts the units
+ - Am I getting propotions as my output?

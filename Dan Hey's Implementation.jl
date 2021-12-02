@@ -55,9 +55,9 @@ Returns:
     Array -> A super gaussian model for the Miyake event
 """
 function super_gaussian(t, start_time, duration, area)
-        middle = start_time + duration / 2.;
-        height = area / duration;
-        return height .* exp.(- ((t .- middle) / (1. ./ 1.93516 * duration)) .^ 16.);
+    middle = start_time + duration / 2.;
+    height = area / duration;
+    return height .* exp.(- ((t .- middle) / (1. ./ 1.93516 * duration)) .^ 16.);
 end
 
 """
