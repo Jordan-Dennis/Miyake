@@ -31,6 +31,3 @@ instead of using local namespaces.
  - I just need to get A or N in the right units
  - I should just be able to divide by the $60 \times$ avagardro's number 
  divided by the molecular mass of C14.
-
-# **Urgent**
- - _New .hd5_ without decay field.

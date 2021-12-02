@@ -50,32 +50,32 @@ function calculate_equilibrium(TO::Matrix{Float64}, P::Vector{Float64})
     return optimize(RSS, [6.0], LBFGS());                       # 6.0 is a standard starting position for the reserviours
 end
 
-function main() # ::Vector{Float64}
-    Guttler2014 = h5open("Guttler14.hd5");              # Opening the HDF5 file
-    F = Guttler2014["fluxes"][1:end, 1:end];            # Retrieving the flux matrix 
-    P = Guttler2014["production coefficients"][1:end];  # Retrieving the projection of the production 
-    N = Guttler2014["reservoir content"][1:end, 1:end]; # The C14 reserviour contents 
-    close(Guttler2014);                                 # Closing the file 
+# function main() # ::Vector{Float64}
+Guttler2014 = h5open("Guttler14.hd5");              # Opening the HDF5 file
+F = Guttler2014["fluxes"][1:end, 1:end];            # Retrieving the flux matrix 
+P = Guttler2014["production coefficients"][1:end];  # Retrieving the projection of the production 
+N = Guttler2014["reservoir content"][1:end, 1:end]; # The C14 reserviour contents 
+close(Guttler2014);                                 # Closing the file 
+#! fml everything has come through as a transpose because julia is smartter than python
 
-    #? I think this is very inefficient and I should just use a for loop in the TO section
-    λ = Diagonal([log(2) / 5730 for i in 1:11]);    # Constructing the decay matrix
+#? I think this is very inefficient and I should just use a for loop in the TO section
+λ = Diagonal([log(2) / 5730 for i in 1:11]);    # Constructing the decay matrix
 
-    #! I need to fix all this redefinition.
-    #? I might just add the transfer operator to the .hd5 file since the goal is to profile solvers 
-    F = F ./ transpose(N);                        # The proportion flux
-    TO = F - Diagonal(vec(sum(F, dims=2))) - λ;   # Construncting the transfer operator
+F = transpose(F) ./ N;                        # The proportion flux
+#* The same up until this point 
 
-    equilibrium = calculate_equilibrium(TO, P);   # optimisation from the Guttler2014
-    equilibrium = minimum(equilibrium);           # Getting the equilibrium position
-    equilibrium = TO \ (-equilibrium * P);        # Equibration for the total system based on the guttler production equilibriation 
-    #! Equilibrium is just proportions
+TO = F - Diagonal(vec(sum(F, dims=2))) - λ;   # Construncting the transfer operator
+#! new_c_14 is the problem
 
-    ∇(y, p, t) = vec(TO * y + production(t) * P);   # Calculates the derivative and returns
+#! need to check that minimum is returning the value I want.
+equilibrium = TO \ (- minimum(calculate_equilibrium(TO, P)) * P);   # optimisation from the Guttler2014
 
-    solution = solve(ODEProblem(∇, equilibrium, (760.0, 790.0)), Rosenbrock23())   # Solving the ode
+∇(y, p, t) = vec(TO * y + production(t) * P);   # Calculates the derivative and returns
 
-    troposphere = Vector{Float64}(undef, 228);              # Empty vector to hold the troposphere data
-    for i in 1:228; troposphere[i] = solution[i][2]; end    # Catching the troposphere value
+solution = solve(ODEProblem(∇, equilibrium, (760.0, 790.0)), Rosenbrock23())   # Solving the ode
 
-    plot(troposphere)   # Plotting the troposphere C14 concentrations
-end 
+troposphere = Vector{Float64}(undef, 228);              # Empty vector to hold the troposphere data
+for i in 1:228; troposphere[i] = solution[i][2]; end    # Catching the troposphere value
+
+plot(troposphere)   # Plotting the troposphere C14 concentrations
+# end 
