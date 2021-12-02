@@ -18,6 +18,7 @@ Returns:
  - Float64 → The production during the current year
 """
 #! I want to get rid of all this extra parameter definition
+#? If I do I might have to move this onto a 1-liner in which case I will have to document with #=
 function production(year::Float64)::Vector{Float64}
     local R = 1.88;                                     # Steady State Production in ^{14}Ccm^{2}s^{-1}
     local T = 11;                                       # Period of solar cycle years 
@@ -55,6 +56,8 @@ N = Guttler2014["reservoir content"][1:end, 1:end];   # The C14 reserviour conte
 λ = Guttler2014["decay coefficients"][1:end, 1:end];  # The decay constants as the diagonal elements
 close(Guttler2014);                                         # Closing the file 
 
+#! I need to fix all this redefinition.
+#? I might just add the transfer operator to the .hd5 file since the goal is to profile solvers 
 F = F ./ transpose(N);                        # The proportion flux
 TO = F - Diagonal(vec(sum(F, dims=2))) - λ;   # Construncting the transfer operator
 equilibrium = calculate_equilibrium(TO, P);   # optimisation from the Guttler2014
@@ -63,5 +66,5 @@ equilibrium = TO \ (-equilibrium * P);        # Equibration for the total system
 
 ∇(y, p, t) = vec(TO * y + production(t) * P);   # Calculates the derivative and returns
 
-solve(ODEProblem(∇, equilibrium, (760.0, 790.0)), Rosenbrock23())   # Solving the ode
+solution = solve(ODEProblem(∇, equilibrium, (760.0, 790.0)), Rosenbrock23())   # Solving the ode
 # end 
