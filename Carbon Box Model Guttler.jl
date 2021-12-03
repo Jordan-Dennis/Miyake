@@ -51,24 +51,16 @@ solution = Array(solution)[2, 1:end];   # Storing the solution #? Is this wastef
 #* I want to improve this binning method 
 function bin(time_series::Vector{Float64}, solution_vector::Vector{Float64})::Vector{Float64}
     binned_solution = Vector{Float64}(undef, 0);   # Setting a vector to hold the bins 
-    bin_start = 760.0; # The start of the bin 
-    bin_sum = 0.0; # The sum of the values in the bin 
-    bin_num = 0.0; # The number of entries in the bin
-    for t in 1:size(solution_vector)[1]    # Looping through the entires 
-        if bin_start < time_series[t] < (bin_start + 1.0)    # Checking if the value is in the bin 
-            bin_sum += solution[t]; # Incrementing the sum in the bin
-            bin_num += 1.0; # Incrementing the count of the entires
-        else
-            bin_start += 1.0; # Incrementing the bin start by one year 
-            append!(binned_solution, bin_sum / bin_num);    # Adding the anual mean to the bon matrix 
-            bin_sum = solution[t]; # Starting the new count 
-            bin_num = 1.0; # Startingn the new count
-        end
+    whole_times = @. floor(time_series);    # Creating a vector of discrete time.
+    for whole_time in unique(whole_times)   # Looping over the unique elements discrete times 
+        indexes = findall(whole_times == whole_time);   # Getting the indexes of the entries 
+        append!(binned_solution, sum(solution_vector[indexes]) / length(indexes));   # Appending to binned_solution
     end
     return binned_solution
 end
 
 binned_solution = bin(time, solution);  # Binning the results into years 
+#! this is returning only NaN for some reason.
 
 # residual with respect to the median of all of them (median more stable so outliers)
 # Tree uptake is not accounted for. 

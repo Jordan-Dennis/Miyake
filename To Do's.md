@@ -17,7 +17,12 @@ instead of using local namespaces.
     - He then adds the two within another function 
     - Finally he converts the units in a 4th function 
     - Dan calculates the super gaussian and then converts the units
- - I need to ask which equilibrate is needed for the 2014
+ - So I need to choose step sizes for both the burn in period and the 30 year run time 
+    - I am going to use a fixed step size for ease of implementation and 
+    accuracy of the comparison.
+    - set_proposed_dt may be an option 
+    - I also need to look into the integrator() and step! functions which may 
+    allow me to move the solver in a or loop 
 
 
 
