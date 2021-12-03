@@ -22,6 +22,7 @@ instead of using local namespaces.
  - I want to web scrape the list of ODEs from DifferentialEquations.jl
  - I want to export the data to a .csv for ease of manipulation.
  - I need to look into using CSV and Requests and Statisitics
+ - Lower priority is fixing Github 
 
 
 

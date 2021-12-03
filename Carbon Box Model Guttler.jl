@@ -53,7 +53,7 @@ function bin(time_series::Vector{Float64}, solution_vector::Vector{Float64})::Ve
     binned_solution = Vector{Float64}(undef, 0);   # Setting a vector to hold the bins 
     whole_times = @. floor(time_series);    # Creating a vector of discrete time.
     for whole_time in unique(whole_times)   # Looping over the unique elements discrete times 
-        indexes = findall(whole_times == whole_time);   # Getting the indexes of the entries 
+        indexes = findall(whole_times .== whole_time);   # Getting the indexes of the entries 
         append!(binned_solution, sum(solution_vector[indexes]) / length(indexes));   # Appending to binned_solution
     end
     return binned_solution
