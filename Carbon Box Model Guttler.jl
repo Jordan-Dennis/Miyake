@@ -1,8 +1,29 @@
 using Plots; gr();              # Moving Plot( ) into the namespace
 using HDF5;                     # for .hd5 file manipulation
 using DifferentialEquations;    # Provides a variety of differential solvers
-using Optim: optimize, LBFGS;   # Importing the optimisation library and solver #? :foward
 using LinearAlgebra: Diagonal;  # Efficient Diagonal matrixes
+using Statistics;               # For the data analysis 
+
+"""
+Bin:
+ - Takes time series data and calculates the average of each year.
+
+Parameters:
+ - time_series::Vector{Float64} → The times corresponding to the data points in
+ - solution_vector::Vector{Float64} → The data that is to be aggregated
+
+Returns;
+ - Vector{Float64} → The mean in solution_vector of each year in time_series
+"""
+function bin(time_series::Vector{Float64}, solution_vector::Vector{Float64})::Vector{Float64}
+    local binned_solution = Vector{Float64}(undef, 0);  # Setting a vector to hold the bins 
+    local whole_times = @. floor(time_series);          # Creating a vector of discrete time.
+    for whole_time in unique(whole_times)                                           # Looping over the unique elements discrete times 
+        local indexes = findall(whole_times .== whole_time);                        # Getting the indexes of the entries 
+        append!(binned_solution, sum(solution_vector[indexes]) / length(indexes));  # Appending to binned_solution
+    end
+    return binned_solution
+end
 
 """
 Production:
@@ -47,24 +68,8 @@ solution = @time solve(ODEProblem(∇, solution[end], (760.0, 790.0)), reltol = 
 
 time = Array(solution.t);               # Storing the time sampling 
 solution = Array(solution)[2, 1:end];   # Storing the solution #? Is this wasteful of the other information?
-
-#* I want to improve this binning method 
-function bin(time_series::Vector{Float64}, solution_vector::Vector{Float64})::Vector{Float64}
-    binned_solution = Vector{Float64}(undef, 0);   # Setting a vector to hold the bins 
-    whole_times = @. floor(time_series);    # Creating a vector of discrete time.
-    for whole_time in unique(whole_times)   # Looping over the unique elements discrete times 
-        indexes = findall(whole_times .== whole_time);   # Getting the indexes of the entries 
-        append!(binned_solution, sum(solution_vector[indexes]) / length(indexes));   # Appending to binned_solution
-    end
-    return binned_solution
-end
-
 binned_solution = bin(time, solution);  # Binning the results into years 
-#! this is returning only NaN for some reason.
 
-# residual with respect to the median of all of them (median more stable so outliers)
-# Tree uptake is not accounted for. 
-
-plot(time, solution[1:end]);   # Plotting the troposphere C14 concentrations
-# plot!(760:790, binned_solution); # Adding the means to the plot
+C14Plot = plot(time, solution[1:end]);  # Plotting the troposphere C14 concentrations
+scatter!(760:790, binned_solution);     # Adding the means to the plot
 # end 
