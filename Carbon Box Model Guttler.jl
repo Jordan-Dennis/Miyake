@@ -3,6 +3,7 @@ using HDF5;                     # for .hd5 file manipulation
 using DifferentialEquations;    # Provides a variety of differential solvers
 using LinearAlgebra: Diagonal;  # Efficient Diagonal matrixes
 using Statistics;               # For the data analysis 
+using Threads
 
 """
 Bin:
@@ -38,14 +39,11 @@ Parameters:
 Returns:
  - Float64 → The production during the current year
 """
-#! I want to get rid of all this extra parameter definition
-#? If I do I might have to move this onto a 1-liner in which case I will have to document with #=
-function production(year)
-    local R = 1.88;                                             # Steady State Production in ^{14}Ccm^{2}s^{-1}
-    local T = 2 * π / 11;                                       # Period of solar cycle years 
-    local Φ = 1.25;                                             # Phase of the solar cycle 
-    local unit_factor = 3.747273140033743;                      # Corrects the units.
-    return unit_factor * (R + 0.18 * R * sin(T * year + Φ));    # correcting the units
+function production(year)                                       
+    local gh::Float64 = 20 * 1.60193418235;  # height of the super-gaussian  
+    local uf::Float64 = 3.747273140033743;   # unit correcting factor
+    return uf * (1.88 + 0.18 * 1.88 * sin(2 * π / 11 * year + 1.25) +   # Sinusoidal production 
+        gh * exp(- (12 * (year - 775)) ^ 16));                             # Super gaussian
 end
 
 # function main() # ::Vector{Float64}
@@ -70,6 +68,7 @@ time = Array(solution.t);               # Storing the time sampling
 solution = Array(solution)[2, 1:end];   # Storing the solution #? Is this wasteful of the other information?
 binned_solution = bin(time, solution);  # Binning the results into years 
 
-C14Plot = plot(time, solution[1:end]);  # Plotting the troposphere C14 concentrations
-scatter!(760:790, binned_solution);     # Adding the means to the plot
+open("ODE comparison.txt", "a+");   # Opening a file to store the results 
+
+close("ODE comparison.txt")
 # end 
