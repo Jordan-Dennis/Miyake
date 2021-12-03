@@ -56,19 +56,25 @@ function read_hd5(file_name::String)::Tuple{Matrix{Float64}, Vector{Float64}}
     return TO, P                                           
 end
 
-# equilibrium_production = 3.747273140033743 * 1.88;  # Correct equilibrium production
-# equilibrium = TO \ (-equilibrium_production * P);   # Brehm equilibriation for Guttler 2014
+"""
+Passed a solver function runs the solver and returns the speed and binned data
+"""
+function run_solver(solver, trans_op::Matrix{Float64}, prod_proj::Vector{Float64},
+    eq::Vector{Float64})
+    ∇(y, p, t) = vec(TO * y + production(t) * P);                                       # Calculates the derivative
+    solution = solve(ODEProblem(∇, eq, (-360.0, 760.0)), reltol = 1e-6);       # Solving the ode over a burn-in period
+    solution = @time solve(ODEProblem(∇, solution[end], (760.0, 790.0)), reltol = 1e-6, solver);# Solving the ODE over the period of interest 
 
-# ∇(y, p, t) = vec(TO * y + production(t) * P);                                       # Calculates the derivative
-# solution = solve(ODEProblem(∇, equilibrium, (-360.0, 760.0)), reltol = 1e-6);       # Solving the ode over a burn-in period
-# solution = @time solve(ODEProblem(∇, solution[end], (760.0, 790.0)), reltol = 1e-6);# Solving the ODE over the period of interest 
-
-# time = Array(solution.t);               # Storing the time sampling 
-# solution = Array(solution)[2, 1:end];   # Storing the solution
-# binned_solution = bin(time, solution);  # Binning the results into years 
+    time = Array(solution.t);               # Storing the time sampling 
+    solution = Array(solution)[2, 1:end];   # Storing the solution
+    return bin(time, solution);  # Binning the results into years 
+end
 
 function main()
     local (TO, P) = read_hd5("Guttler14.hd5");  # Reading the data into the scope 
+    
+    eq_prod = 3.747273140033743 * 1.88;  # Correct equilibrium production
+    equilibrium = TO \ (-eq_prod * P);   # Brehm equilibriation for Guttler 2014
 end
 
 main(); # Calling the program

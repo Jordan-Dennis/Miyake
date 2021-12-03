@@ -18,6 +18,8 @@ instead of using local namespaces.
 # Plan
  - function for solving the ODE based on a solver request 
  - function to multithread solvers in batches 
+ - I want to run the burn-in period once and have it outside of
+ the solver implementation ,
 
 # Goals
  - I think I should be able to do all this in _100_ lines of code
