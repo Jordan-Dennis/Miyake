@@ -17,10 +17,18 @@ instead of using local namespaces.
  returned
  - I also need a function to write the data to a file 
 
+# Docstring plan
+ - I want to reduce the size of my doc strings while maintaining the 
+ amount of information that is included within them
+ - Doc strings are written in markdown
+ - remove the parameter bit and returns and include this all within a 
+ paragraph. Type hinting already tells the type
+
 # Plan
  - function for the basic reading of the file
  - function for solving the ODE based on a solver request 
  - function to multithread solvers in batches 
+ - I still want a main() function to implement all of this jazz 
 
 # Goals
  - I think I should be able to do all this in _100_ lines of code

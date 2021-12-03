@@ -68,10 +68,14 @@ time = Array(solution.t);               # Storing the time sampling
 solution = Array(solution)[2, 1:end];   # Storing the solution #? Is this wasteful of the other information?
 binned_solution = bin(time, solution);  # Binning the results into years 
 
-open("ODE comparison.txt", "a+") do # Opening a file to store the results 
-    write(760.0:790.0)              # Writing the time series data to the file
-    for year in binned_solution;        # Looping over the binned values 
-        write()
+"""
+"""
+function write_txt(data::Vector{Float64})::Nothing
+    open("ODE comparison.txt", "a+") do # Opening a file to store the results 
+        write(760.0:790.0)              # Writing the time series data to the file
+        for year in binned_solution;        # Looping over the binned values 
+            write()
+        end
     end
 end
 # end 
