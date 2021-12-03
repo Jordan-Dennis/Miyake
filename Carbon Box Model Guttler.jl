@@ -2,7 +2,6 @@ using Plots; gr();              # Moving Plot( ) into the namespace
 using HDF5;                     # for .hd5 file manipulation
 using DifferentialEquations;    # Provides a variety of differential solvers
 using LinearAlgebra: Diagonal;  # Efficient Diagonal matrixes
-using Statistics;               # For the data analysis 
 
 """
 Takes time series data and calculates the average of each year.
@@ -59,22 +58,28 @@ end
 """
 Passed a solver function runs the solver and returns the speed and binned data
 """
-function run_solver(solver, trans_op::Matrix{Float64}, prod_proj::Vector{Float64},
-    eq::Vector{Float64})
-    ∇(y, p, t) = vec(TO * y + production(t) * P);                                       # Calculates the derivative
-    solution = solve(ODEProblem(∇, eq, (-360.0, 760.0)), reltol = 1e-6);       # Solving the ode over a burn-in period
-    solution = @time solve(ODEProblem(∇, solution[end], (760.0, 790.0)), reltol = 1e-6, solver);# Solving the ODE over the period of interest 
+function run_solver(solver::Function, ∇::Function, U0::Vector{Float64})
+    problem = ODEProblem(∇, U0, (760.0, 790.0));            # Creating the ODEProblem instance
+    solution = @time solve(problem, reltol = 1e-6, solver); # Solving the ODE over the period of interest 
 
     time = Array(solution.t);               # Storing the time sampling 
     solution = Array(solution)[2, 1:end];   # Storing the solution
-    return bin(time, solution);  # Binning the results into years 
+    return bin(time, solution);             # Binning the results into years 
 end
 
 function main()
     local (TO, P) = read_hd5("Guttler14.hd5");  # Reading the data into the scope 
     
+    #! not a big fan of this equilbrium calculation
     eq_prod = 3.747273140033743 * 1.88;  # Correct equilibrium production
     equilibrium = TO \ (-eq_prod * P);   # Brehm equilibriation for Guttler 2014
+
+    ∇(y, p, t) = vec(TO * y + production(t) * P);                   # Calculates the derivative
+    burn_in_problem = ODEProblem(∇, equilibrium, (-360.0, 760.0));  # Burn in problem  
+    burn_in = solve(burn_in_problem, reltol = 1e-6);                # Running the brun in
+ 
+    solution = run_solver(solver, ∇, burn_in[end]); # Running the solver 
+    write_hd5(solution, ETDRK4());            # Storing the results 
 end
 
 main(); # Calling the program

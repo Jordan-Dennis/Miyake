@@ -9,6 +9,7 @@ instead of using local namespaces.
  - I need to work on the comparison of accuracy using the median 
  - I want to web scrape the list of ODEs from DifferentialEquations.jl
  - Lower priority is fixing Github 
+ - I need to clean main()
 
 # Docstring plan
  - I want to reduce the size of my doc strings while maintaining the 
@@ -18,8 +19,7 @@ instead of using local namespaces.
 # Plan
  - function for solving the ODE based on a solver request 
  - function to multithread solvers in batches 
- - I want to run the burn-in period once and have it outside of
- the solver implementation ,
+ - Chose a starting sample of 5 solvers and compare 
 
 # Goals
  - I think I should be able to do all this in _100_ lines of code
