@@ -3,7 +3,7 @@ using HDF5;                     # for .hd5 file manipulation
 using DifferentialEquations;    # Provides a variety of differential solvers
 using LinearAlgebra: Diagonal;  # Efficient Diagonal matrixes
 using Statistics;               # For the data analysis 
-using Threads
+# using Threads;
 
 """
 Takes time series data and calculates the average of each year.
@@ -33,36 +33,37 @@ end
 Opens a file 'ODE comparison.txt' and writes the binned data to the file 
 in a csv format.
 """
-function write_txt(data::Vector{Float64})::Nothing
-    open("ODE comparison.txt", "a+") do # Opening a file to store the results 
-        write(760.0:790.0)              # Writing the time series data to the file
-        for year in binned_solution;        # Looping over the binned values 
-            write()
-        end
-    end
+function write_hd5(data::Vector{Float64}, solver::String)::Nothing
+    ode_data = h5open("ODE comparison.txt", "cw")   # Opening a file to store the results 
+    ode_data[solver] = data;                        # Writing to a new field
+    close(ode_data);                                # Closing the file
 end
 
-# function main() # ::Vector{Float64}
-Guttler2014 = h5open("Guttler14.hd5");              # Opening the HDF5 file
-F = Guttler2014["fluxes"][1:end, 1:end];            # Retrieving the flux matrix 
-P = Guttler2014["production coefficients"][1:end];  # Retrieving the projection of the production 
-N = Guttler2014["reservoir content"][1:end, 1:end]; # The C14 reserviour contents 
-close(Guttler2014);                                 # Closing the file 
+"""
+Reads the flux (amounts), production (projection) and reserviour contents from 
+a .hd5 file with file_name. It returns the transfer operator and production 
+projection 
+"""
+function read_hd5(file_name::String)::Tuple{Matrix{Float64}, Vector{Float64}}
+    local Guttler2014 = h5open("Guttler14.hd5");                # Opening the HDF5 file
+    local F = Guttler2014["fluxes"][1:end, 1:end];              # Retrieving the flux matrix 
+    local P = Guttler2014["production coefficients"][1:end];    # Retrieving the projection of the production 
+    local N = Guttler2014["reservoir content"][1:end, 1:end];   # The C14 reserviour contents 
+    close(Guttler2014);                                         # Closing the file 
 
-λ = Diagonal([log(2) / 5730 for i in 1:11]);            # Constructing the decay matrix
-F = transpose(F) ./ N;                                  # The proportion flux
-TO = transpose(F) - Diagonal(vec(sum(F, dims=2))) - λ;  # Construncting the transfer operator
+    local λ = Diagonal([log(2) / 5730 for i in 1:11]);          # Constructing the decay matrix
+    F = transpose(F) ./ N;                                      # The proportion flux
+    local TO = transpose(F) - Diagonal(vec(sum(F, dims=2))) - λ;# Construncting the transfer operator
+    return TO, P                                           
+end
 
 equilibrium_production = 3.747273140033743 * 1.88;  # Correct equilibrium production
 equilibrium = TO \ (-equilibrium_production * P);   # Brehm equilibriation for Guttler 2014
 
-∇(y, p, t) = vec(TO * y + production(t) * P);                                   # Calculates the derivative
-solution = solve(ODEProblem(∇, equilibrium, (-360.0, 760.0)), reltol = 1e-6);   # Solving the ode over a burn-in period
-solution = @time solve(ODEProblem(∇, solution[end], (760.0, 790.0)), reltol = 1e-6);  # Solving the ODE over the period of interest 
+∇(y, p, t) = vec(TO * y + production(t) * P);                                       # Calculates the derivative
+solution = solve(ODEProblem(∇, equilibrium, (-360.0, 760.0)), reltol = 1e-6);       # Solving the ode over a burn-in period
+solution = @time solve(ODEProblem(∇, solution[end], (760.0, 790.0)), reltol = 1e-6);# Solving the ODE over the period of interest 
 
 time = Array(solution.t);               # Storing the time sampling 
-solution = Array(solution)[2, 1:end];   # Storing the solution #? Is this wasteful of the other information?
+solution = Array(solution)[2, 1:end];   # Storing the solution
 binned_solution = bin(time, solution);  # Binning the results into years 
-
-
-# end 
