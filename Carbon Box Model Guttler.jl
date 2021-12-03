@@ -6,15 +6,7 @@ using Statistics;               # For the data analysis
 using Threads
 
 """
-Bin:
- - Takes time series data and calculates the average of each year.
-
-Parameters:
- - time_series::Vector{Float64} → The times corresponding to the data points in
- - solution_vector::Vector{Float64} → The data that is to be aggregated
-
-Returns;
- - Vector{Float64} → The mean in solution_vector of each year in time_series
+Takes time series data and calculates the average of each year.
 """
 function bin(time_series::Vector{Float64}, solution_vector::Vector{Float64})::Vector{Float64}
     local binned_solution = Vector{Float64}(undef, 0);  # Setting a vector to hold the bins 
@@ -27,23 +19,27 @@ function bin(time_series::Vector{Float64}, solution_vector::Vector{Float64})::Ve
 end
 
 """
-Production:
- - The production function of C14 as a Vector{Float64} based on the projection
- of the production function into the system. The production function is stated 
-    here with a number of Parameters that can be retrieved from the Guttler
-    2014 paper
-
-Parameters:
- - year::Float64 → The current year 
-
-Returns:
- - Float64 → The production during the current year
+Calculates the production of C14 based on the projection based on the model 
+presented in the _Guttler 2014_ paper.
 """
 function production(year)                                       
     local gh::Float64 = 20 * 1.60193418235;  # height of the super-gaussian  
     local uf::Float64 = 3.747273140033743;   # unit correcting factor
     return uf * (1.88 + 0.18 * 1.88 * sin(2 * π / 11 * year + 1.25) +   # Sinusoidal production 
         gh * exp(- (12 * (year - 775)) ^ 16));                             # Super gaussian
+end
+
+"""
+Opens a file 'ODE comparison.txt' and writes the binned data to the file 
+in a csv format.
+"""
+function write_txt(data::Vector{Float64})::Nothing
+    open("ODE comparison.txt", "a+") do # Opening a file to store the results 
+        write(760.0:790.0)              # Writing the time series data to the file
+        for year in binned_solution;        # Looping over the binned values 
+            write()
+        end
+    end
 end
 
 # function main() # ::Vector{Float64}
@@ -68,14 +64,5 @@ time = Array(solution.t);               # Storing the time sampling
 solution = Array(solution)[2, 1:end];   # Storing the solution #? Is this wasteful of the other information?
 binned_solution = bin(time, solution);  # Binning the results into years 
 
-"""
-"""
-function write_txt(data::Vector{Float64})::Nothing
-    open("ODE comparison.txt", "a+") do # Opening a file to store the results 
-        write(760.0:790.0)              # Writing the time series data to the file
-        for year in binned_solution;        # Looping over the binned values 
-            write()
-        end
-    end
-end
+
 # end 
