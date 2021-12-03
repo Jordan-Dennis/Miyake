@@ -34,32 +34,45 @@ P = Guttler2014["production coefficients"][1:end];  # Retrieving the projection 
 N = Guttler2014["reservoir content"][1:end, 1:end]; # The C14 reserviour contents 
 close(Guttler2014);                                 # Closing the file 
 
-#? I think this is very inefficient and I should just use a for loop in the TO section
 λ = Diagonal([log(2) / 5730 for i in 1:11]);            # Constructing the decay matrix
 F = transpose(F) ./ N;                                  # The proportion flux
 TO = transpose(F) - Diagonal(vec(sum(F, dims=2))) - λ;  # Construncting the transfer operator
 
-#* I might need to copy their structure here for now I'm just gonna thug life it
 equilibrium_production = 3.747273140033743 * 1.88;  # Correct equilibrium production
 equilibrium = TO \ (-equilibrium_production * P);   # Brehm equilibriation for Guttler 2014
-#* Same until here
 
-∇(y, p, t) = vec(TO * y + production(t) * P);   # Calculates the derivative
-solution = solve(ODEProblem(∇, equilibrium, (-360.0, 760.0)));  # Solving the ode over a burn-in period
-solution = solve(ODEProblem(∇, solution[end], (760.0, 790.0))); # Solving the ODE over the period of interest 
+∇(y, p, t) = vec(TO * y + production(t) * P);                                   # Calculates the derivative
+solution = solve(ODEProblem(∇, equilibrium, (-360.0, 760.0)), reltol = 1e-6);   # Solving the ode over a burn-in period
+solution = @time solve(ODEProblem(∇, solution[end], (760.0, 790.0)), reltol = 1e-6);  # Solving the ODE over the period of interest 
 
-# Burn in period up to 760
-# fitting.py 560 
-# Bin takes the values and averages them over the entire year.
-# time sampling to the wrong bin 
-# I need to work out how to specify the time mesh
-# Impulse response function as approximate solution 
+time = Array(solution.t);               # Storing the time sampling 
+solution = Array(solution)[2, 1:end];   # Storing the solution #? Is this wasteful of the other information?
+
+#* I want to improve this binning method 
+function bin(time_series::Vector{Float64}, solution_vector::Vector{Float64})::Vector{Float64}
+    binned_solution = Vector{Float64}(undef, 0);   # Setting a vector to hold the bins 
+    bin_start = 760.0; # The start of the bin 
+    bin_sum = 0.0; # The sum of the values in the bin 
+    bin_num = 0.0; # The number of entries in the bin
+    for t in 1:size(solution_vector)[1]    # Looping through the entires 
+        if bin_start < time_series[t] < (bin_start + 1.0)    # Checking if the value is in the bin 
+            bin_sum += solution[t]; # Incrementing the sum in the bin
+            bin_num += 1.0; # Incrementing the count of the entires
+        else
+            bin_start += 1.0; # Incrementing the bin start by one year 
+            append!(binned_solution, bin_sum / bin_num);    # Adding the anual mean to the bon matrix 
+            bin_sum = solution[t]; # Starting the new count 
+            bin_num = 1.0; # Startingn the new count
+        end
+    end
+    return binned_solution
+end
+
+binned_solution = bin(time, solution);  # Binning the results into years 
+
 # residual with respect to the median of all of them (median more stable so outliers)
-
 # Tree uptake is not accounted for. 
 
-# troposphere = Vector{Float64}(undef, 28);              # Empty vector to hold the troposphere data
-# for i in 1:28; troposphere[i] = solution[i][2]; end    # Catching the troposphere value
-
-# plot(troposphere)   # Plotting the troposphere C14 concentrations
+plot(time, solution[1:end]);   # Plotting the troposphere C14 concentrations
+# plot!(760:790, binned_solution); # Adding the means to the plot
 # end 
