@@ -16,10 +16,8 @@ instead of using local namespaces.
  - Doc strings are written in markdown
 
 # Plan
- - function for the basic reading of the file
  - function for solving the ODE based on a solver request 
  - function to multithread solvers in batches 
- - I still want a main() function to implement all of this jazz 
 
 # Goals
  - I think I should be able to do all this in _100_ lines of code
