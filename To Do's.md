@@ -12,7 +12,18 @@ instead of using local namespaces.
  - I want to export the data to a .csv for ease of manipulation.
  - I need to look into using CSV and Requests and Statisitics
  - Lower priority is fixing Github 
+ - So I need a function to read the .hd5 file and return the transfer 
+ operator and P but i think they are the only thinds that need to be 
+ returned
+ - I also need a function to write the data to a file 
 
+# Plan
+ - function for the basic reading of the file
+ - function for solving the ODE based on a solver request 
+ - function to multithread solvers in batches 
+
+# Goals
+ - I think I should be able to do all this in _100_ lines of code
 
 
 
