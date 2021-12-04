@@ -89,9 +89,16 @@ function profile_solvers(solvers::Tuple)::Matrix{Union{Float64, String}}
     return results
 end
 
-solvers = (Rosenbrock23, ROS34PW1a, QNDF1, ABDF2, ExplicitRK,
-    DP5, TanYam7, Vern6, SSPRK43, VCAB5);    # A list of solvers
-solver_info = profile_solvers(solvers); # Calling the program
+function main()
+    solvers = (Rosenbrock23, ROS34PW1a, QNDF1, ABDF2, ExplicitRK,
+        DP5, TanYam7, Vern6, SSPRK43, VCAB5);    # A list of solvers
+    solver_info = profile_solvers(solvers);      # Calling the program
 
-medians = median(solver_info[2:end, 3:end], dims=1); # Getting the column medians
-solver_info[2:end, 3:end] = (solver_info[2:end, 3:end]' .- medians')'; # Getting the deviations 
+    medians = median(solver_info[2:end, 3:end], dims=1);                    # Getting the column medians
+    solver_info[2:end, 3:end] = (solver_info[2:end, 3:end]' .- medians')';  # Getting the deviations 
+    accuracy = var(solver_info[2:end, 3:end], dims=1);                      # Calculating the RMSE error << is better 
+
+    Gadfly.plot(accuracy, solver_info[2:end, 2]);  # Creating a preliminary plot
+end
+
+main(); # Running the program
