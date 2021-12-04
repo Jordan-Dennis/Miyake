@@ -66,7 +66,6 @@ stores the time information and the binned output of the ODE solver.
 function profile_solvers(solvers::Vector)::Matrix{Union{Float64, String}}
     local (TO, P) = read_hd5("Guttler14.hd5");  # Reading the data into the scope 
     
-    #! not a big fan of this equilbrium calculation
     local eq_prod = 3.747273140033743 * 1.88;  # Correct equilibrium production
     local equilibrium = TO \ (-eq_prod * P);   # Brehm equilibriation for Guttler 2014
 
@@ -74,25 +73,27 @@ function profile_solvers(solvers::Vector)::Matrix{Union{Float64, String}}
     local burn_in = ODEProblem(∇, equilibrium, (-360.0, 760.0));# Burn in problem  
     local burn_in = solve(burn_in, reltol = 1e-6);              # Running the brun in
 
-    C14 = Matrix{Float64}(undef, length(solvers), 34);              # Creating the storage Matrix  
-    results = DataFrame(solver = @.string(solvers), times=undef,
-        times_error=undef, accuracy=undef, accuracy_error=undef);   # DataFrame of summary Statistics
+    local C14 = Matrix{Float64}(undef, length(solvers), 34);      # Creating the storage Matrix 
+    local time_mean = Vector{Float64}(undef, length(solvers));    # For the mean of the times
+    local time_var = Vector{Float64}(undef, length(solvers));     # For the time varience 
+    local results = DataFrame(solver = @.string(solvers));        # DataFrame of summary Statistics
 
-    for (index, solver) in enumerate(solvers)                   # Looping over the solvers 
-        local time_vector = Vector{Float64}(undef, 10); # A vector to hold the different run times of each trial 
+    for (index, solver) in enumerate(solvers)           # Looping over the solvers 
+        local time_sample = Vector{Float64}(undef, 10); # A vector to hold the different run times of each trial 
         for i in 1:10
             local timer = time();                               # Starting a timer
             solution = run_solver(solver(), ∇, burn_in[end]);   # Running the solver
             time_vector[i] = -timer + time();                   # ending the timer 
         end
-        results.times[index] = mean(time_vector);      # Storing run time 
-        results.times_error[index] = var(time_vector); # Storing time error
+        time_meane[index] = mean(time_vector);  # Storing run time 
+        time_var[index] = var(time_vector);     # Storing time error
     end 
 
     C14 = (C14' .- median(C14, dims=1)')';      # Calculating deviations from median 
     results.accuracy = mean(C14, dims=2);       # Calculating the mean of the deviation from the median 
     results.accuracy_error = var(C14, dims=2);  # Calculating the RMSE error << is better 
-
+    results.time_mean = time_mean;              # Storing the mean run time
+    results.time_var = time_var;                # Storing the varience of the time sample 
     return results
 end
 
