@@ -89,16 +89,28 @@ function profile_solvers(solvers::Tuple)::Matrix{Union{Float64, String}}
     return results
 end
 
-function main()
+# function main()
     solvers = (Rosenbrock23, ROS34PW1a, QNDF1, ABDF2, ExplicitRK,
         DP5, TanYam7, Vern6, SSPRK43, VCAB5);    # A list of solvers
     solver_info = profile_solvers(solvers);      # Calling the program
 
     medians = median(solver_info[2:end, 3:end], dims=1);                    # Getting the column medians
     solver_info[2:end, 3:end] = (solver_info[2:end, 3:end]' .- medians')';  # Getting the deviations 
-    accuracy = var(solver_info[2:end, 3:end], dims=1);                      # Calculating the RMSE error << is better 
+    
+    accuracy = mean(solver_info[2:end, 3:end], dims=2); # Calculating the mean of the deviation from the median 
+    acc_err = var(solver_info[2:end, 3:end], dims=2);   # Calculating the RMSE error << is better 
+    times = - solver_info[2:end, 2];                    # Creating variable to simplify expressions                  
+    labels = solver_info[2:end, 1];                     # Temp variable for the labels of the plot 
 
-    Gadfly.plot(accuracy, solver_info[2:end, 2]);  # Creating a preliminary plot
-end
+    #* Current accuracy calc is wrong that is the error bar 
+    #* I feel like I need to create a new matrix to this end
 
-main(); # Running the program
+    datavisual = Gadfly.plot(
+        y=accuracy, x=time, label=labels,   # Some data 
+        Guide.ylabel("Accuracy (RMSE)"),    # X Label
+        Guide.xlabel("Time (s)"),           # Y Label
+        Guide.xticks(ticks=[middle(times)], orientation=:horizontal),   # Adding the single Xtick in the middle 
+        Guide.yticks(ticks=[middle(accuracy)], orientation=:vertical),  # Adding the single YTick      
+        ymin=accuracy - acc_err, ymax=accuracy + acc_err, # Accuracy error bars
+        Geom.yerrorbar, Geom.point, Geom.label)   
+# end
