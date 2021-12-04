@@ -1,8 +1,8 @@
-# using Plots; gr();              # Moving Plot( ) into the namespace
+using Plots; gr();              # Moving Plot( ) into the namespace
 using HDF5;                     # for .hd5 file manipulation
 using DifferentialEquations;    # Provides a variety of differential solvers
 using LinearAlgebra: Diagonal;  # Efficient Diagonal matrixes
-# using Base.Threads;             # For efficient comparison
+using Statistics;               # Let's get this fucking bread 
 
 """
 Takes time series data and calculates the average of each year.
@@ -98,16 +98,14 @@ profile_solvers(solvers);                       # Calling the program
 Loads data from the .hd5 file provided by file_name and the extracts it using the 
 list of solvers provided by solvers, creating a dict of times and year binned values.
 """
-function compare_accuracy(file_name::String, solvers::Tuple)::Vector{Float64}
-    Dict{String, Tuple{Float64, Vector{Float64}}}();    # Storing the information in a dictionary
+function get_results(file_name::String, solvers::Tuple)::Vector{Float64}
     solver_time = Matrix{Float64}(undef, 31, length(solvers));  # Storing the simulate C14 concetrations 
     solver_data = Vector{Float64}(undef, length(solvers));      # storing the time data 
-    hd5 = h5open(file_name);                                        # Opening the stored information 
-    for solver in solvers;                                          # Looping through the solvers
-        solver_data[string(solver)] = hd5[solver][2][1:end];        # Retrieving the result.
+    hd5 = h5open(file_name);                                    # Opening the stored information 
+    for (index, solver) in enumerate(@.string(solvers));        # Looping through the solvers
+        solver_data[1:31, index] = hd5[solver][2][1:end];       # Retrieving data as column +
+        solver_time[index] = hd5[solver][1];                    # retrieving the time and storing in vector
     end 
 
-    # local median::Vector{Float64} = Vector{Float64}(undef, 11); # Vector for anual medians
-    Array()
-    @. median()
+
 end
