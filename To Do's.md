@@ -9,7 +9,7 @@ instead of using local namespaces.
  - I need to work on the comparison of accuracy using the median 
  - Lower priority is fixing Github 
  - So I want to use GadFly as it is similar to ggplot
- 
+
 # Plan
  - function to multithread solvers in batches (yet to come)
  - Chose a starting sample of 5 solvers and compare 
@@ -19,6 +19,7 @@ instead of using local namespaces.
  at the end. (Matrix{Float64}) is honestly looking good.
  - Thinking of refactoring so that all calls to user defined functions
  happen in main(). I just like this style a little more. (more thought)
+ - That fucking equilibrium
   
 
 # Goals

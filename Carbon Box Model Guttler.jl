@@ -73,30 +73,18 @@ function profile_solvers(solvers::Tuple)::Matrix{Union{Float64, String}}
     local burn_in = ODEProblem(∇, equilibrium, (-360.0, 760.0));# Burn in problem  
     local burn_in = solve(burn_in, reltol = 1e-6);              # Running the brun in
 
-    results = Matrix{Float64}(undef, length(solvers) + 1, 32);  # Creating the storage Matrix  
+    results = Matrix(undef, length(solvers) + 1, 32);           # Creating the storage Matrix  
+    results[1, 1] = "Time (s)";                                 # Adding titles 
+    results[1, 2:end] = 760.0:790.0;                            # Adding the time values                             
     for (index, solver) in enumerate(solvers)                   # Looping over the solvers 
         local timer = time();                                   # Starting a timer
         local solution = run_solver(solver(), ∇, burn_in[end]); # Running the solver 
-        results[index, 1] = timer - time();                     # Storing run time 
-        results[index, 2:end] = solution;                       # Storing the ODE solution 
+        results[index + 1, 1] = timer - time();                 # Storing run time 
+        results[index + 1, 2:end] = solution;                   # Storing the ODE solution 
     end 
 
     return results
 end
 
-solvers = (Rosenbrock23, ROS34PW1a); # A list of solvers
-solver_info = profile_solvers(solvers);                       # Calling the program
-
-"""
-Loads data from the .hd5 file provided by file_name and the extracts it using the 
-list of solvers provided by solvers, creating a dict of times and year binned values.
-"""
-function get_results(file_name::String, solvers::Tuple)::Vector{Float64}
-    solver_time = Matrix{Float64}(undef, 31, length(solvers));  # Storing the simulate C14 concetrations 
-    solver_data = Vector{Float64}(undef, length(solvers));      # storing the time data 
-    hd5 = h5open(file_name);                                    # Opening the stored information 
-    for (index, solver) in enumerate(@.string(solvers));        # Looping through the solvers
-        solver_data[1:31, index] = hd5[solver][2][1:end];       # Retrieving data as column +
-        solver_time[index] = hd5[solver][1];                    # retrieving the time and storing in vector
-    end
-end
+solvers = (Rosenbrock23, ROS34PW1a);    # A list of solvers
+solver_info = profile_solvers(solvers); # Calling the program
