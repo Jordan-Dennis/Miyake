@@ -32,7 +32,7 @@ Opens a file 'ODE comparison.txt' and writes the binned data to the file
 in a csv format.
 """
 function write_hd5(data::Vector{Float64}, solver::String)::Nothing
-    ode_data = h5open("ODE comparison.txt", "cw")   # Opening a file to store the results 
+    ode_data = h5open("ODE comparison.hd5", "cw")   # Opening a file to store the results 
     ode_data[solver] = data;                        # Writing to a new field
     close(ode_data);                                # Closing the file
 end
@@ -58,28 +58,58 @@ end
 """
 Passed a solver function runs the solver and returns the speed and binned data
 """
-function run_solver(solver::Function, ∇::Function, U0::Vector{Float64})
+function run_solver(solver, ∇::Function, U0::Vector{Float64})
     problem = ODEProblem(∇, U0, (760.0, 790.0));            # Creating the ODEProblem instance
-    solution = @time solve(problem, reltol = 1e-6, solver); # Solving the ODE over the period of interest 
+    solution = solve(problem, reltol = 1e-6, solver); # Solving the ODE over the period of interest 
 
     time = Array(solution.t);               # Storing the time sampling 
-    solution = Array(solution)[2, 1:end];   # Storing the solution
+    solution = Array(solution)[2, 1:end];   # Storing the solution for troposphere 
     return bin(time, solution);             # Binning the results into years 
 end
 
-function main()
+"""
+Takes a list of solvers as an input and runs a multithreaded comparison that 
+stores the time information and the binned output of the ODE solver.
+"""
+function profile_solvers(solvers::Tuple)
     local (TO, P) = read_hd5("Guttler14.hd5");  # Reading the data into the scope 
     
     #! not a big fan of this equilbrium calculation
     eq_prod = 3.747273140033743 * 1.88;  # Correct equilibrium production
     equilibrium = TO \ (-eq_prod * P);   # Brehm equilibriation for Guttler 2014
 
-    ∇(y, p, t) = vec(TO * y + production(t) * P);                   # Calculates the derivative
-    burn_in_problem = ODEProblem(∇, equilibrium, (-360.0, 760.0));  # Burn in problem  
-    burn_in = solve(burn_in_problem, reltol = 1e-6);                # Running the brun in
- 
-    solution = run_solver(solver, ∇, burn_in[end]); # Running the solver 
-    write_hd5(solution, ETDRK4());            # Storing the results 
+    ∇(y, p, t) = vec(TO * y + production(t) * P);           # Calculates the derivative
+    burn_in = ODEProblem(∇, equilibrium, (-360.0, 760.0));  # Burn in problem  
+    burn_in = solve(burn_in, reltol = 1e-6);                # Running the brun in
+
+    test = time();
+    for solver in solvers   # Looping over the solvers 
+        timer = time();                                     # Starting a timer
+        solution = run_solver(solver(), ∇, burn_in[end]);   # Running the solver 
+        timer =- timer();                                   # Getting the run time
+        write_hd5(solution, string(solver));                # Storing the results
+    end 
+    test =- time()
+    println(test);
 end
 
-main(); # Calling the program
+solvers = (Rosenbrock23, ROS34PW1a, KenCarp58); # A list of solvers
+profile_solvers(solvers);                       # Calling the program
+
+function compare_accuracy(file_name::String, solvers::Tuple)::Vector{Float64}
+    hd5 = h5open(file_name);    # Opening the stored information 
+    for solver in solvers;      # Looping through the solvers
+        hd5[solver]
+    end
+
+    # If this were in R I would be working with a data frame of 3 cols"
+    # solver::String, time::Float64, C14::Float64
+    # I would be calculating the median in each bin from the 
+    # solver sample and then calculating the deviation
+    # Possibly need 
+    # using csv
+    # using DataFrames
+    # using Statistics
+end
+
+#* to read back the results from the .hd5 file use a = ode["solver"][1:end]

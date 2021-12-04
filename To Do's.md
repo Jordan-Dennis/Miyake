@@ -17,9 +17,13 @@ instead of using local namespaces.
  - Doc strings are written in markdown
 
 # Plan
- - function for solving the ODE based on a solver request 
- - function to multithread solvers in batches 
+ - function to multithread solvers in batches (yet to come)
  - Chose a starting sample of 5 solvers and compare 
+ - So I need to do fixed and adaptive time step methods separatelty 
+ - write a function to compare the accuracy 
+ - I need to work out how I want to store the time information
+ - consider data analysis in R because it is the best 
+ - consider using the DataFrames.jl package
 
 # Goals
  - I think I should be able to do all this in _100_ lines of code
