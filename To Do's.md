@@ -9,7 +9,6 @@ instead of using local namespaces.
  - I need to work on the comparison of accuracy using the median 
  - I want to web scrape the list of ODEs from DifferentialEquations.jl
  - Lower priority is fixing Github 
- - I need to clean main()
 
 # Docstring plan
  - I want to reduce the size of my doc strings while maintaining the 
@@ -19,12 +18,12 @@ instead of using local namespaces.
 # Plan
  - function to multithread solvers in batches (yet to come)
  - Chose a starting sample of 5 solvers and compare 
- - So I need to do fixed and adaptive time step methods separatelty 
  - write a function to compare the accuracy 
  - I need to work out how I want to store the time information
- - consider data analysis in R because it is the best 
  - consider using the DataFrames.jl package
- - Need to patch the existing file bug 
+ - I need to work out a way of selecting a minimum resolution of 31
+ - Actually, I am just going to ignore the solvers that don't meet 
+ this minum requirement 
 
 # Goals
  - I think I should be able to do all this in _100_ lines of code

@@ -1,8 +1,8 @@
-using Plots; gr();              # Moving Plot( ) into the namespace
+# using Plots; gr();              # Moving Plot( ) into the namespace
 using HDF5;                     # for .hd5 file manipulation
 using DifferentialEquations;    # Provides a variety of differential solvers
 using LinearAlgebra: Diagonal;  # Efficient Diagonal matrixes
-using Base.Threads;             # For efficient comparison
+# using Base.Threads;             # For efficient comparison
 
 """
 Takes time series data and calculates the average of each year.
@@ -32,8 +32,8 @@ end
 Opens a file 'ODE comparison.txt' and writes the binned data to the file 
 in a csv format.
 """
-function write_hd5(data::Vector{Float64}, solver::String)::Nothing
-    ode_data = h5open("ODE comparison.hd5", "cw")   # Opening a file to store the results 
+function write_hd5(data::Tuple{Float64, Vector{Float64}}, solver::String)::Nothing
+    ode_data = h5open("ODE comparison.hd5", "w")   # Opening a file to store the results 
     ode_data[solver] = data;                        # Writing to a new field
     close(ode_data);                                # Closing the file
 end
@@ -72,7 +72,7 @@ end
 Takes a list of solvers as an input and runs a multithreaded comparison that 
 stores the time information and the binned output of the ODE solver.
 """
-function profile_solvers(solvers::Tuple)
+function profile_solvers(solvers::Tuple)::Nothing
     local (TO, P) = read_hd5("Guttler14.hd5");  # Reading the data into the scope 
     
     #! not a big fan of this equilbrium calculation
@@ -83,32 +83,31 @@ function profile_solvers(solvers::Tuple)
     local burn_in = ODEProblem(∇, equilibrium, (-360.0, 760.0));  # Burn in problem  
     local burn_in = solve(burn_in, reltol = 1e-6);                # Running the brun in
 
-    test = time();
-    Threads.@spawn for solver in solvers   # Looping over the solvers 
-        local timer = time();                                     # Starting a timer
-        local solution = run_solver(solver(), ∇, burn_in[end]);   # Running the solver 
-        local timer -= time();                                   # Getting the run time
-        write_hd5(solution, string(solver));                # Storing the results
+    for solver in solvers                        # Looping over the solvers 
+        local timer = time();                                   # Starting a timer
+        local solution = run_solver(solver(), ∇, burn_in[end]); # Running the solver 
+        local timer -= time();                                  # Getting the run time
+        write_hd5((timer, solution), string(solver));                    # Storing the results
     end 
-    test -= time()
-    println(-test);
 end
 
-solvers = (Rosenbrock23, ROS34PW1a, KenCarp58); # A list of solvers
+solvers = (Rosenbrock23, ROS34PW1a); # A list of solvers
 profile_solvers(solvers);                       # Calling the program
 
+"""
+Loads data from the .hd5 file provided by file_name and the extracts it using the 
+list of solvers provided by solvers, creating a dict of times and year binned values.
+"""
 function compare_accuracy(file_name::String, solvers::Tuple)::Vector{Float64}
-    hd5 = h5open(file_name);    # Opening the stored information 
-    for solver in solvers;      # Looping through the solvers
-        hd5[solver][1:end];     # Retrieving the result.
-    end
+    Dict{String, Tuple{Float64, Vector{Float64}}}();    # Storing the information in a dictionary
+    solver_time = Matrix{Float64}(undef, 31, length(solvers));  # Storing the simulate C14 concetrations 
+    solver_data = Vector{Float64}(undef, length(solvers));      # storing the time data 
+    hd5 = h5open(file_name);                                        # Opening the stored information 
+    for solver in solvers;                                          # Looping through the solvers
+        solver_data[string(solver)] = hd5[solver][2][1:end];        # Retrieving the result.
+    end 
 
-    # If this were in R I would be working with a data frame of 3 cols"
-    # solver::String, time::Float64, C14::Float64
-    # I would be calculating the median in each bin from the 
-    # solver sample and then calculating the deviation
-    # Possibly need 
-    # using csv
-    # using DataFrames
-    # using Statistics
+    # local median::Vector{Float64} = Vector{Float64}(undef, 11); # Vector for anual medians
+    Array()
+    @. median()
 end
