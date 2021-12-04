@@ -14,7 +14,7 @@ function bin(time_series::Vector{Float64}, solution_vector::Vector{Float64})::Ve
     local whole_times = @. floor(time_series);          # Creating a vector of discrete time.
     for whole_time in unique(whole_times)                                           # Looping over the unique elements discrete times 
         local indexes = findall(whole_times .== whole_time);                        # Getting the indexes of the entries 
-        append!(binned_solution, sum(solution_vector[indexes]) / length(indexes));  # Appending to binned_solution
+        append!(binned_solution, mean(solution_vector[indexes]));  # Appending to binned_solution
     end
     return binned_solution
 end
@@ -99,18 +99,6 @@ function profile_solvers(solvers::Vector)::DataFrame
     results.time_mean = t_mean;                     # Storing the mean run time
     results.time_var = t_var;                       # Storing the varience of the time sample 
     return results
-    
-    #? So I need the gradient of the solver with respect to the input of the solver
-    #? That is to say the parameters of the production function. Ahhh shit, how the 
-    #? fuck am I supposed to reorganise the file. 
-    #? I could set ∇ up to take prodcution as a parameter through p
-    production(p, t) = uf * (1.88 + 0.18 * 1.88 * sin(2 * π / p * t) +  # Sin wave
-        20 * 1.60193418235 * exp(-(12 * (t - 775)) ^ 16));              # Super gaussian
-    ∇(x, p, t) = vec(TO * x + production(p, t) * P);                    # Derivative with extra argument 
-    hi(p) = ODEProblem(∇, burn_in[end], (760.0, 790.0), p);             # An ODEProblem that is a function of the parameters 
-    #! trying to wrap solve step in a functipon 
-    f(p) = solve(hi(p));    # Wrapping complete. #! for fucks sake this is like parse the parsel
-    bye = ForwardDiff.gradient(solve(hi), [7:14]);                      # Implementation 1
 end
 
 function main()

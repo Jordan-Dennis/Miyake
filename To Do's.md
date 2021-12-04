@@ -8,11 +8,15 @@
  - function to multithread solvers in batches (yet to come)
  - Lower priority is fixing Github 
  - Fix the local declarations
- - I need to calculate the gradients with respect to the parameters 
- and profile.   
-    - This is done best using the packages FowardDiff and ReverseDiff
  - Generalisation to any of the prebuilt models is important
     - Equilibriate function required
+
+# Dumping thoughts
+ - So I have the derivatives working 
+ - I want to refactor the code and have it more general
+ - Let's get the mutlithreaded implementation going and then 
+ create a temporary file for the derivatives.
+ 
 
 # Goals
  - I want to have the profiling script in under _100_ lines 
