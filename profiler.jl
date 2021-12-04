@@ -1,4 +1,3 @@
-using Gadfly;                   # Moving Plot( ) into the namespace
 using HDF5;                     # for .hd5 file manipulation
 using DifferentialEquations;    # Provides a variety of differential solvers
 using LinearAlgebra: Diagonal;  # Efficient Diagonal matrixes
@@ -106,7 +105,12 @@ function main()
         DP5, TanYam7, Vern6, SSPRK43, VCAB5];           # A list of solvers
     #? I want to bring more into this surface level when I generalise 
     r = profile_solvers(solvers);                       # Calling the program
-    CSV.write("solver_profiles.csv", r, append=true);   # Adding new solvers to the CSV
+
+    if isfile("solver_profiles.csv");                       # Checking for the .csv file 
+        CSV.write("solver_profiles.csv", r, append=true);   # Adding new solvers to the CSV
+    else 
+        CSV.write("solver_profiles.csv", r, append=false);  # Creating the file if it does not exist 
+    end
 end
 
 main();

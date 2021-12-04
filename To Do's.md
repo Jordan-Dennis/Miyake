@@ -1,15 +1,9 @@
 # To Do's:
  - I need to look into |> operator for simplicity
- - I really need two files. 
  - So I want to generalise now at the end.
     - This will require an equilbrium calculation with steady_state_production arg
  - Should probably add some error catching particularly with the CSV write
-
-## File One
- - Generates the dataset 
-
-## File Two 
- - Analyses the data. 
+ - Error catching is a priority 
 
 # Plan
  - function to multithread solvers in batches (yet to come)
@@ -17,10 +11,9 @@
  - Fix the local declarations
  - I need to calculate the gradients with respect to the parameters 
  and profile.   
-    - This is done best using the package FowardDiff
+    - This is done best using the packages FowardDiff and ReverseDiff
  - Generalisation to any of the prebuilt models is important
     - Equilibriate function required
-
 
 # Goals
  - I want to have the profiling script in under _100_ lines 
