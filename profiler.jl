@@ -104,15 +104,9 @@ end
 function main()
     solvers = [Rosenbrock23, ROS34PW1a, QNDF1, ABDF2, ExplicitRK,
         DP5, TanYam7, Vern6, SSPRK43, VCAB5];           # A list of solvers
+    #? I want to bring more into this surface level when I generalise 
     r = profile_solvers(solvers);                       # Calling the program
     CSV.write("solver_profiles.csv", r, append=true);   # Adding new solvers to the CSV
-
-    datavisual = Gadfly.plot(
-        y=r.accuracy, x=r.time_mean, label=r.solver,  
-        Guide.ylabel("Accuracy"), Guide.xlabel("Time"),          
-        ymin=r.accuracy - r.accuracy_var, ymax=r.accuracy + r.accuracy_var,
-        xmin=r.time_mean - r.time_var, xmax=r.time_mean + r.time_var, 
-        Geom.yerrorbar, Geom.xerrorbar, Geom.point, Geom.label)   
 end
 
 main();
