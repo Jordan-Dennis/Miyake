@@ -1,15 +1,14 @@
 # To Do's:
  - I need to look into |> operator to simplify the global namespace 
 instead of using local namespaces.
- - I want to have a plot that places things into quadrants based on 
- the speed and the accuracy 
 
 # Plan
  - function to multithread solvers in batches (yet to come)
- - Let's get the basic plot going
  - I need to implement the repetition of each of the solvers
-- Lower priority is fixing Github 
+      - not going to hold on the actual C14 and only save the time
+ - Lower priority is fixing Github 
  - Fix the local declarations
+ - Linear color scaling for the accuracy and time
   
 
 # Goals

@@ -79,9 +79,14 @@ function profile_solvers(solvers::Tuple)::Matrix{Union{Float64, String}}
     results[1, 3:end] = 760.0:790.0;                            # Adding the time values 
 
     for (index, solver) in enumerate(solvers)                   # Looping over the solvers 
-        local timer = time();                                   # Starting a timer
-        local solution = run_solver(solver(), ∇, burn_in[end]); # Running the solver 
-        results[index + 1, 2] = timer - time();                 # Storing run time 
+        #? Attempting to implement the repition of each solver for time and accuracy resolution
+        local time_vector = Vector{Float64}(undef, 10); # A vector to hold the different run times of each trial 
+        for i in 1:10
+            local timer = time();                                   # Starting a timer
+            local solution = run_solver(solver(), ∇, burn_in[end]); # Running the solver
+            time_vector[i] = -timer + time();                       # ending the timer 
+        end
+            results[index + 1, 2] = timer - time();                 # Storing run time 
         results[index + 1, 3:end] = solution;                   # Storing the ODE solution 
         results[index + 1, 1] = string(solver);                 # Saving the solver info
     end 
@@ -101,16 +106,12 @@ end
     acc_err = var(solver_info[2:end, 3:end], dims=2);   # Calculating the RMSE error << is better 
     times = - solver_info[2:end, 2];                    # Creating variable to simplify expressions                  
     labels = solver_info[2:end, 1];                     # Temp variable for the labels of the plot 
-
-    #* Current accuracy calc is wrong that is the error bar 
-    #* I feel like I need to create a new matrix to this end
+    #? New matrix or DataFrames.jl might simplify things if it has a mutate function like R
 
     datavisual = Gadfly.plot(
         y=accuracy, x=time, label=labels,   # Some data 
         Guide.ylabel("Accuracy (RMSE)"),    # X Label
         Guide.xlabel("Time (s)"),           # Y Label
-        Guide.xticks(ticks=[middle(times)], orientation=:horizontal),   # Adding the single Xtick in the middle 
-        Guide.yticks(ticks=[middle(accuracy)], orientation=:vertical),  # Adding the single YTick      
         ymin=accuracy - acc_err, ymax=accuracy + acc_err, # Accuracy error bars
         Geom.yerrorbar, Geom.point, Geom.label)   
 # end
