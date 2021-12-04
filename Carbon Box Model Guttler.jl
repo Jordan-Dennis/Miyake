@@ -1,4 +1,4 @@
-using Plots; gr();              # Moving Plot( ) into the namespace
+using Gadfly;                   # Moving Plot( ) into the namespace
 using HDF5;                     # for .hd5 file manipulation
 using DifferentialEquations;    # Provides a variety of differential solvers
 using LinearAlgebra: Diagonal;  # Efficient Diagonal matrixes
@@ -26,16 +26,6 @@ function production(year)
     local uf::Float64 = 3.747273140033743;   # unit correcting factor
     return uf * (1.88 + 0.18 * 1.88 * sin(2 * π / 11 * year + 1.25) +   # Sinusoidal production 
         gh * exp(- (12 * (year - 775)) ^ 16));                             # Super gaussian
-end
-
-"""
-Opens a file 'ODE comparison.txt' and writes the binned data to the file 
-in a csv format.
-"""
-function write_hd5(data, solver::String)::Nothing
-    ode_data = h5open("ODE comparison.hd5", "w")   # Opening a file to store the results 
-    ode_data[solver] = data;                        # Writing to a new field
-    close(ode_data);                                # Closing the file
 end
 
 """
@@ -72,27 +62,30 @@ end
 Takes a list of solvers as an input and runs a multithreaded comparison that 
 stores the time information and the binned output of the ODE solver.
 """
-function profile_solvers(solvers::Tuple)::Nothing
+function profile_solvers(solvers::Tuple)::Matrix{Union{Float64, String}}
     local (TO, P) = read_hd5("Guttler14.hd5");  # Reading the data into the scope 
     
     #! not a big fan of this equilbrium calculation
     local eq_prod = 3.747273140033743 * 1.88;  # Correct equilibrium production
     local equilibrium = TO \ (-eq_prod * P);   # Brehm equilibriation for Guttler 2014
 
-    ∇(y, p, t) = vec(TO * y + production(t) * P);           # Calculates the derivative
-    local burn_in = ODEProblem(∇, equilibrium, (-360.0, 760.0));  # Burn in problem  
-    local burn_in = solve(burn_in, reltol = 1e-6);                # Running the brun in
+    ∇(y, p, t) = vec(TO * y + production(t) * P);               # Calculates the derivative
+    local burn_in = ODEProblem(∇, equilibrium, (-360.0, 760.0));# Burn in problem  
+    local burn_in = solve(burn_in, reltol = 1e-6);              # Running the brun in
 
-    for solver in solvers                        # Looping over the solvers 
+    results = Matrix{Float64}(undef, length(solvers) + 1, 32);  # Creating the storage Matrix  
+    for (index, solver) in enumerate(solvers)                   # Looping over the solvers 
         local timer = time();                                   # Starting a timer
         local solution = run_solver(solver(), ∇, burn_in[end]); # Running the solver 
-        local timer -= time();                                  # Getting the run time
-        write_hd5((timer, solution), string(solver));                    # Storing the results
+        results[index, 1] = timer - time();                     # Storing run time 
+        results[index, 2:end] = solution;                       # Storing the ODE solution 
     end 
+
+    return results
 end
 
 solvers = (Rosenbrock23, ROS34PW1a); # A list of solvers
-profile_solvers(solvers);                       # Calling the program
+solver_info = profile_solvers(solvers);                       # Calling the program
 
 """
 Loads data from the .hd5 file provided by file_name and the extracts it using the 
