@@ -6,6 +6,8 @@ instead of using local namespaces.
  - I should probably also use CSV fuck.
  - This mioght bring my code under the goal
  - I really need two files. 
+ - You know what I am going to delete my orbital simulation and also the
+ failed attempt at the lennard jones particle simulation.
 
 ## File One
  - Generates the dataset 
@@ -22,7 +24,8 @@ instead of using local namespaces.
  - Linear color scaling for the accuracy and time  
 
 # Goals
- - I think I should be able to do all this in _100_ lines of code
+ -I want to have the profiling script in under _100_ lines 
+ - I will have the analysis script in under _50_ lines
 
 
 

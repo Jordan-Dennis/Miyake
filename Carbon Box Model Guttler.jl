@@ -63,7 +63,7 @@ end
 Takes a list of solvers as an input and runs a multithreaded comparison that 
 stores the time information and the binned output of the ODE solver.
 """
-function profile_solvers(solvers::Tuple)::Matrix{Union{Float64, String}}
+function profile_solvers(solvers::Vector)::Matrix{Union{Float64, String}}
     local (TO, P) = read_hd5("Guttler14.hd5");  # Reading the data into the scope 
     
     #! not a big fan of this equilbrium calculation
@@ -74,48 +74,32 @@ function profile_solvers(solvers::Tuple)::Matrix{Union{Float64, String}}
     local burn_in = ODEProblem(∇, equilibrium, (-360.0, 760.0));# Burn in problem  
     local burn_in = solve(burn_in, reltol = 1e-6);              # Running the brun in
 
-    results = Matrix(undef, length(solvers) + 1, 34);   # Creating the storage Matrix  
-    results[1, 1] = "Solver";                           # stating the solver
-    results[1, 2] = "Time (s)";                         # Adding titles 
-    results[1, 3] = "Time variance (s)";                # Adding titles
-    results[1, 4:end] = 760.0:790.0;                    # Adding the time values 
-    #? perhaps doing the deviations inside this function would be much better?
-    #? I suspect that matrixes will have faster operations so I store the actual
-    #? C14 concentrations inside of a matrix that I operator on outside of the loops 
-    #? I have a DataFrame for the statistics stuff and this is what I return from the
-    #? function. Ohhh yes I like this.
+    C14 = Matrix{Float64}(undef, length(solvers), 34);              # Creating the storage Matrix  
+    results = DataFrame(solver = @.string(solvers), times=undef,
+        times_error=undef, accuracy=undef, accuracy_error=undef);   # DataFrame of summary Statistics
 
     for (index, solver) in enumerate(solvers)                   # Looping over the solvers 
-        #? Attempting to implement the repition of each solver for time and accuracy resolution
         local time_vector = Vector{Float64}(undef, 10); # A vector to hold the different run times of each trial 
         for i in 1:10
             local timer = time();                               # Starting a timer
             solution = run_solver(solver(), ∇, burn_in[end]);   # Running the solver
             time_vector[i] = -timer + time();                   # ending the timer 
         end
-        #! possible errors in this spheres
-        results[index + 1, 1] = string(solver);     # Saving the solver info
-        results[index + 1, 2] = mean(time_vector);  # Storing run time 
-        results[index + 1, 3] = var(time_vector);   # Storing time error
-        results[index + 1, 4:end] = solution;       # Storing the ODE solution 
+        results.times[index] = mean(time_vector);      # Storing run time 
+        results.times_error[index] = var(time_vector); # Storing time error
     end 
+
+    C14 = (C14' .- median(C14, dims=1)')';      # Calculating deviations from median 
+    results.accuracy = mean(C14, dims=2);       # Calculating the mean of the deviation from the median 
+    results.accuracy_error = var(C14, dims=2);  # Calculating the RMSE error << is better 
 
     return results
 end
 
 # function main()
-    solvers = (Rosenbrock23, ROS34PW1a, QNDF1, ABDF2, ExplicitRK,
-        DP5, TanYam7, Vern6, SSPRK43, VCAB5);    # A list of solvers
+    solvers = [Rosenbrock23, ROS34PW1a, QNDF1, ABDF2, ExplicitRK,
+        DP5, TanYam7, Vern6, SSPRK43, VCAB5];    # A list of solvers
     solver_info = profile_solvers(solvers);      # Calling the program
-
-    medians = median(solver_info[2:end, 3:end], dims=1);                    # Getting the column medians
-    solver_info[2:end, 3:end] = (solver_info[2:end, 3:end]' .- medians')';  # Getting the deviations 
-    
-    accuracy = mean(solver_info[2:end, 3:end], dims=2); # Calculating the mean of the deviation from the median 
-    acc_err = var(solver_info[2:end, 3:end], dims=2);   # Calculating the RMSE error << is better 
-    times = - solver_info[2:end, 2];                    # Creating variable to simplify expressions                  
-    labels = solver_info[2:end, 1];                     # Temp variable for the labels of the plot 
-    #? New matrix or DataFrames.jl might simplify things if it has a mutate function like R
 
     datavisual = Gadfly.plot(
         y=accuracy, x=time, label=labels,   # Some data 
