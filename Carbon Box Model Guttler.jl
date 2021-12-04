@@ -89,7 +89,7 @@ function profile_solvers(solvers::Vector)::Matrix{Union{Float64, String}}
         time_var[index] = var(time_sample);     # Storing time error
     end 
 
-    C14 = C14' .- median(C14, dims=1)';         # Calculating deviations from median 
+    C14 = (C14' .- median(C14, dims=1)')';      # Calculating deviations from median 
     results.accuracy = mean(C14, dims=2);       # Calculating the mean of the deviation from the median 
     results.accuracy_var = var(C14, dims=2);    # Calculating the RMSE error << is better 
     results.time_mean = time_mean;              # Storing the mean run time

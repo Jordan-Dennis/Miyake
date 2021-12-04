@@ -17,14 +17,12 @@ instead of using local namespaces.
 
 # Plan
  - function to multithread solvers in batches (yet to come)
- - I need to implement the repetition of each of the solvers
-      - not going to hold on the actual C14 and only save the time
  - Lower priority is fixing Github 
  - Fix the local declarations
  - Linear color scaling for the accuracy and time  
 
 # Goals
- -I want to have the profiling script in under _100_ lines 
+ - I want to have the profiling script in under _100_ lines 
  - I will have the analysis script in under _50_ lines
 
 
