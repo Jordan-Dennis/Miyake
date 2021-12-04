@@ -24,6 +24,7 @@ instead of using local namespaces.
  - I need to work out how I want to store the time information
  - consider data analysis in R because it is the best 
  - consider using the DataFrames.jl package
+ - Need to patch the existing file bug 
 
 # Goals
  - I think I should be able to do all this in _100_ lines of code
