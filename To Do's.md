@@ -1,10 +1,17 @@
 # To Do's:
  - I need to look into |> operator to simplify the global namespace 
 instead of using local namespaces.
-- Save the results at the end
-- I am currently being a bad programmer by not using dataframes,jl
-- I should probably also use CSV fuck.
-- This mioght bring my code under the goal
+ - Save the results at the end
+ - I am currently being a bad programmer by not using dataframes,jl
+ - I should probably also use CSV fuck.
+ - This mioght bring my code under the goal
+ - I really need two files. 
+
+## File One
+ - Generates the dataset 
+
+## File Two 
+ - Analyses the data. 
 
 # Plan
  - function to multithread solvers in batches (yet to come)

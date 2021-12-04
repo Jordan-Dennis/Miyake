@@ -3,6 +3,7 @@ using HDF5;                     # for .hd5 file manipulation
 using DifferentialEquations;    # Provides a variety of differential solvers
 using LinearAlgebra: Diagonal;  # Efficient Diagonal matrixes
 using Statistics;               # Let's get this fucking bread 
+using DataFrames;               # For succinct data manipulation
 
 """
 Takes time series data and calculates the average of each year.
@@ -73,22 +74,30 @@ function profile_solvers(solvers::Tuple)::Matrix{Union{Float64, String}}
     local burn_in = ODEProblem(∇, equilibrium, (-360.0, 760.0));# Burn in problem  
     local burn_in = solve(burn_in, reltol = 1e-6);              # Running the brun in
 
-    results = Matrix(undef, length(solvers) + 1, 33);           # Creating the storage Matrix  
-    results[1, 1] = "Solver";                                   # stating the solver
-    results[1, 2] = "Time (s)";                                 # Adding titles 
-    results[1, 3:end] = 760.0:790.0;                            # Adding the time values 
+    results = Matrix(undef, length(solvers) + 1, 34);   # Creating the storage Matrix  
+    results[1, 1] = "Solver";                           # stating the solver
+    results[1, 2] = "Time (s)";                         # Adding titles 
+    results[1, 3] = "Time variance (s)";                # Adding titles
+    results[1, 4:end] = 760.0:790.0;                    # Adding the time values 
+    #? perhaps doing the deviations inside this function would be much better?
+    #? I suspect that matrixes will have faster operations so I store the actual
+    #? C14 concentrations inside of a matrix that I operator on outside of the loops 
+    #? I have a DataFrame for the statistics stuff and this is what I return from the
+    #? function. Ohhh yes I like this.
 
     for (index, solver) in enumerate(solvers)                   # Looping over the solvers 
         #? Attempting to implement the repition of each solver for time and accuracy resolution
         local time_vector = Vector{Float64}(undef, 10); # A vector to hold the different run times of each trial 
         for i in 1:10
-            local timer = time();                                   # Starting a timer
-            local solution = run_solver(solver(), ∇, burn_in[end]); # Running the solver
-            time_vector[i] = -timer + time();                       # ending the timer 
+            local timer = time();                               # Starting a timer
+            solution = run_solver(solver(), ∇, burn_in[end]);   # Running the solver
+            time_vector[i] = -timer + time();                   # ending the timer 
         end
-            results[index + 1, 2] = timer - time();                 # Storing run time 
-        results[index + 1, 3:end] = solution;                   # Storing the ODE solution 
-        results[index + 1, 1] = string(solver);                 # Saving the solver info
+        #! possible errors in this spheres
+        results[index + 1, 1] = string(solver);     # Saving the solver info
+        results[index + 1, 2] = mean(time_vector);  # Storing run time 
+        results[index + 1, 3] = var(time_vector);   # Storing time error
+        results[index + 1, 4:end] = solution;       # Storing the ODE solution 
     end 
 
     return results
