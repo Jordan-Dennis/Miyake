@@ -81,7 +81,7 @@ function profile_solvers(solvers::Tuple)::Matrix{Union{Float64, String}}
     for (index, solver) in enumerate(solvers)                   # Looping over the solvers 
         local timer = time();                                   # Starting a timer
         local solution = run_solver(solver(), ∇, burn_in[end]); # Running the solver 
-        results[index + 1, 3] = timer - time();                 # Storing run time 
+        results[index + 1, 2] = timer - time();                 # Storing run time 
         results[index + 1, 3:end] = solution;                   # Storing the ODE solution 
         results[index + 1, 1] = string(solver);                 # Saving the solver info
     end 
@@ -90,5 +90,5 @@ function profile_solvers(solvers::Tuple)::Matrix{Union{Float64, String}}
 end
 
 solvers = (Rosenbrock23, ROS34PW1a, QNDF1, ABDF2, ExplicitRK,
-    DP5, TanYam7, Vern6);    # A list of solvers
+    DP5, TanYam7, Vern6, SSPRK43, VCAB5);    # A list of solvers
 solver_info = profile_solvers(solvers); # Calling the program

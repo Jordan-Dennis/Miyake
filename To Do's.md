@@ -12,11 +12,9 @@ instead of using local namespaces.
 
 # Plan
  - function to multithread solvers in batches (yet to come)
- - Chose a starting sample of 5 solvers and compare 
  - write a function to compare the accuracy 
- - I need to work out a way of selecting a minimum resolution of 31
- - I will use DataFrames do the manipulation and then save the file
- at the end. (Matrix{Float64}) is honestly looking good.
+ - Let's get the basic plot going
+ - Also need to call multiple times to oget a measure of the speeed
  - Thinking of refactoring so that all calls to user defined functions
  happen in main(). I just like this style a little more. (more thought)
  - That fucking equilibrium
