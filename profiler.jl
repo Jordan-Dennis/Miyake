@@ -101,7 +101,7 @@ function profile_solvers(solvers::Vector)::DataFrame
     return results
 end
 
-# function main()
+function main()
     solvers = [Rosenbrock23, ROS34PW1a, QNDF1, ABDF2, ExplicitRK,
         DP5, TanYam7, Vern6, SSPRK43, VCAB5];           # A list of solvers
     r = profile_solvers(solvers);                       # Calling the program
@@ -113,4 +113,6 @@ end
         ymin=r.accuracy - r.accuracy_var, ymax=r.accuracy + r.accuracy_var,
         xmin=r.time_mean - r.time_var, xmax=r.time_mean + r.time_var, 
         Geom.yerrorbar, Geom.xerrorbar, Geom.point, Geom.label)   
-# end
+end
+
+main();

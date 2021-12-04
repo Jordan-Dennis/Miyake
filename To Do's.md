@@ -15,7 +15,10 @@
  - Lower priority is fixing Github 
  - Fix the local declarations
  - I need to calculate the gradients with respect to the parameters 
- and profile.
+ and profile.   
+    - This is done best using the package FowardDiff
+ - Generalisation to any of the prebuilt models is important
+    - Equilibriate function required
 
 
 # Goals
