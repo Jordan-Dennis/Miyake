@@ -32,7 +32,7 @@ end
 Opens a file 'ODE comparison.txt' and writes the binned data to the file 
 in a csv format.
 """
-function write_hd5(data::Tuple{Float64, Vector{Float64}}, solver::String)::Nothing
+function write_hd5(data, solver::String)::Nothing
     ode_data = h5open("ODE comparison.hd5", "w")   # Opening a file to store the results 
     ode_data[solver] = data;                        # Writing to a new field
     close(ode_data);                                # Closing the file
@@ -105,7 +105,5 @@ function get_results(file_name::String, solvers::Tuple)::Vector{Float64}
     for (index, solver) in enumerate(@.string(solvers));        # Looping through the solvers
         solver_data[1:31, index] = hd5[solver][2][1:end];       # Retrieving data as column +
         solver_time[index] = hd5[solver][1];                    # retrieving the time and storing in vector
-    end 
-
-
+    end
 end
