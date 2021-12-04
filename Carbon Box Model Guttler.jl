@@ -73,18 +73,22 @@ function profile_solvers(solvers::Tuple)::Matrix{Union{Float64, String}}
     local burn_in = ODEProblem(∇, equilibrium, (-360.0, 760.0));# Burn in problem  
     local burn_in = solve(burn_in, reltol = 1e-6);              # Running the brun in
 
-    results = Matrix(undef, length(solvers) + 1, 32);           # Creating the storage Matrix  
-    results[1, 1] = "Time (s)";                                 # Adding titles 
-    results[1, 2:end] = 760.0:790.0;                            # Adding the time values                             
+    results = Matrix(undef, length(solvers) + 1, 33);           # Creating the storage Matrix  
+    results[1, 1] = "Solver";                                   # stating the solver
+    results[1, 2] = "Time (s)";                                 # Adding titles 
+    results[1, 3:end] = 760.0:790.0;                            # Adding the time values 
+
     for (index, solver) in enumerate(solvers)                   # Looping over the solvers 
         local timer = time();                                   # Starting a timer
         local solution = run_solver(solver(), ∇, burn_in[end]); # Running the solver 
-        results[index + 1, 1] = timer - time();                 # Storing run time 
-        results[index + 1, 2:end] = solution;                   # Storing the ODE solution 
+        results[index + 1, 3] = timer - time();                 # Storing run time 
+        results[index + 1, 3:end] = solution;                   # Storing the ODE solution 
+        results[index + 1, 1] = string(solver);                 # Saving the solver info
     end 
 
     return results
 end
 
-solvers = (Rosenbrock23, ROS34PW1a);    # A list of solvers
+solvers = (Rosenbrock23, ROS34PW1a, QNDF1, ABDF2, ExplicitRK,
+    DP5, TanYam7, Vern6);    # A list of solvers
 solver_info = profile_solvers(solvers); # Calling the program
