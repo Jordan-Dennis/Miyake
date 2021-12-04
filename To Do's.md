@@ -2,7 +2,6 @@
  - I need to look into |> operator for simplicity
  - So I want to generalise now at the end.
     - This will require an equilbrium calculation with steady_state_production arg
- - Should probably add some error catching particularly with the CSV write
  - Error catching is a priority 
 
 # Plan

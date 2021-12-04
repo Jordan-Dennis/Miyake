@@ -4,6 +4,7 @@ using LinearAlgebra: Diagonal;  # Efficient Diagonal matrixes
 using Statistics;               # Let's get this fucking bread 
 using DataFrames;               # For succinct data manipulation
 using CSV;                      # For writing the data to prevent constant re-running
+using ForwardDiff;              # For profiling the gradients
 
 """
 Takes time series data and calculates the average of each year.
@@ -66,8 +67,8 @@ stores the time information and the binned output of the ODE solver.
 function profile_solvers(solvers::Vector)::DataFrame
     local (TO, P) = read_hd5("Guttler14.hd5");  # Reading the data into the scope 
     
-    local eq_prod = 3.747273140033743 * 1.88;  # Correct equilibrium production
-    local equilibrium = TO \ (-eq_prod * P);   # Brehm equilibriation for Guttler 2014
+    local uf = 3.747273140033743;  # Correct equilibrium production
+    local equilibrium = TO \ (- uf *  1.88 * P);   # Brehm equilibriation for Guttler 2014
 
     ∇(y, p, t) = vec(TO * y + production(t) * P);               # Calculates the derivative
     local burn_in = ODEProblem(∇, equilibrium, (-360.0, 760.0));# Burn in problem  
@@ -98,6 +99,18 @@ function profile_solvers(solvers::Vector)::DataFrame
     results.time_mean = t_mean;                     # Storing the mean run time
     results.time_var = t_var;                       # Storing the varience of the time sample 
     return results
+    
+    #? So I need the gradient of the solver with respect to the input of the solver
+    #? That is to say the parameters of the production function. Ahhh shit, how the 
+    #? fuck am I supposed to reorganise the file. 
+    #? I could set ∇ up to take prodcution as a parameter through p
+    production(p, t) = uf * (1.88 + 0.18 * 1.88 * sin(2 * π / p * t) +  # Sin wave
+        20 * 1.60193418235 * exp(-(12 * (t - 775)) ^ 16));              # Super gaussian
+    ∇(x, p, t) = vec(TO * x + production(p, t) * P);                    # Derivative with extra argument 
+    hi(p) = ODEProblem(∇, burn_in[end], (760.0, 790.0), p);             # An ODEProblem that is a function of the parameters 
+    #! trying to wrap solve step in a functipon 
+    f(p) = solve(hi(p));    # Wrapping complete. #! for fucks sake this is like parse the parsel
+    bye = ForwardDiff.gradient(solve(hi), [7:14]);                      # Implementation 1
 end
 
 function main()
