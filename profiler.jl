@@ -82,7 +82,6 @@ function profile_solvers(solvers::Vector, ∇::Function, u0::Vector{Float64},
     local t_var = Vector{Float64}(undef, length(solvers));      # For the time varience 
     local results = DataFrame(solver = @.string(solvers));      # DataFrame of summary Statistics
 
-    p[1] = 11.0;    # Setting the period of the production function  
     for (index, solver) in enumerate(solvers)           # Looping over the solvers 
         local time_sample = Vector{Float64}(undef, 10); # A vector to hold the different run times of each trial 
         for i in 1:10
@@ -90,20 +89,16 @@ function profile_solvers(solvers::Vector, ∇::Function, u0::Vector{Float64},
             solution = run_solver(solver(), ∇, u0, p);  # Running the solver
             time_sample[i] = time() - timer;            # ending the timer 
             
-            if length(solution) !== 31                                  # Checking that the solver had the appropriate resolution 
-                local dims = size(C14);                                 # soft dimensions to save multiple function calls 
-                local nC14 = Matrix{Float64}(undef, dims[1], dims[2]);  # Creating the new array to house the values
-                nC14[1:index - 1, 1:31] = C14[1:index - 1, 1:31];       # Filling with the old values 
-                C14 = nC14;                                             # Assigning over the old matrix 
-                break
-            elseif i == 10                      # Storing final run
+            if i == 10                      # Storing final run
                 C14[index, 1:end] = solution;   # filling C14
             end
         end
+        #! If I break inside the loop this will produce an error 
         t_mean[index] = mean(time_sample[2:end]);   # Storing run time ignoring compile run.
         t_var[index] = var(time_sample[2:end]);     # Storing time error
     end 
 
+    #? The first two columns are returning NaN
     C14 = (C14' .- median(C14, dims=1)')';          # Calculating deviations from median 
     results.accuracy = vec(mean(C14, dims=2));      # Calculating the mean of the deviation from the median 
     results.accuracy_var = vec(var(C14, dims=2));   # Calculating the RMSE error << is better 
@@ -129,16 +124,14 @@ function main()
     local uf = 3.747273140033743;                               # Correct equilibrium production
     local u0 = parameters[2] \ (- uf *  1.88 * parameters[3]);  # Brehm equilibriation for Guttler 2014
 
-    local position = @>> ODEProblem(derivative, u0, #! Yay Pipes
+    local position = @>> ODEProblem(derivative, u0, #! Yay Pipes Kind of 
         (-360.0, 760.0), parameters) |>             # Burn in problem  
         solve(_, reltol=1e-6).u[end];               # Running the model and returning final position
 
-    local batch_1 = [Rosenbrock23, ROS34PW1a, QNDF1, ABDF2, 
-        ExplicitRK, DP5, TanYam7, Vern6, SSPRK43, VCAB5,
-        KenCarp4, TRBDF2, Trapezoid, BS3, Tsit5,
-        RadauIIA5, SRIW1, Rodas5, Kvaerno5]
-    
-    profiles = profile_solvers(batch_1, derivative, position, parameters); # Running the first batch of solvers 
+    local solvers = [TRBDF2, BS3, Tsit5, Rosenbrock23,
+        ROS34PW1a, QNDF1, ABDF2, ExplicitRK, DP5,
+        TanYam7, Vern6];
+    profiles = profile_solvers(solvers, derivative, position, parameters); # Running the first batch of solvers 
     
     if isfile("solver_profiles.csv");                           # Checking for the .csv file 
         CSV.write("solver_profiles.csv", profiles, append=true);# Adding new solvers to the CSV

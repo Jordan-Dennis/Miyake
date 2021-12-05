@@ -22,12 +22,6 @@ So everything is currently a mess. I have not got parameters passing the way tha
 
 I will not be generalising any more since I will make the assumption that the behaviour of the guttler 2014 model is sufficient for the remaining models. The last thing to do in my script would be to organise the profiling of the gradients which I have nearly got worked out. 
 
-Run_solvers needs desparately to be fixed or removed.
-
-I only need to worry about p when I am doing the derivatives yet I have now thoughly mixed it throughout. As a result I will try and profile the derivatives in the same place as I profile the solvers.
-
-I also still need to check that the `@async` is actually fast
-
-Pipes is something that I will implement at the end.\
+Pipes is something that I will implement at the end.
 
 I need to look into the loss function for the profile gradients function.
