@@ -11,7 +11,7 @@
  - I also have to profile the gradients and the solvers separately
   which means running exactly twice as much as I would like 
  - Things are getting very long and I am not a big fan
- - static typing only once everything is working 
+ - static typing only once everything is working aesvf
 
 # Goals
  - I want to have the profiling script in under _200_ lines 
