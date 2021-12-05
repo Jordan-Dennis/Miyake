@@ -110,12 +110,14 @@ end
 """
 Profiles the derivatives 
 """
-function profile_gradients(∇::Function, u0::Vector{Float64}, parameters ::Vector)
-    # solution(p) = @>> ODEProblem(∇, u0, (760.0, 790.0), p) |>
-    #     solve(_, reltol=1e-6);                              # function for auto diff
-    # return ForwardDiff.gradient(solution, parameters);      # Implementation 1
-    local miyake = DataFrame(CSV.File("Miyake12.csv")); # Reading the Miyake data
-    χ² = miyake.dc14 ./ miyake.sig_d14c;                # calculating a χ² statistic
+function profile_gradients(solvers::Vector, ∇::Function, u0::Vector{Float64},
+        parameters ::Vector)
+    local solution = run_solver(solver, ∇, u0, parameters); #! need consistent naming conventions for parameters
+    local ΔC14 = solution[2:end] - solution[1:end - 1];     # Calculating the modelled DC14
+
+    local miyake = DataFrame(CSV.File("Miyake12.csv"));         # Reading the Miyake data
+    local χ² = sum(((miyake.dc14 .- ΔC14) ./ miyake.sig_d14c) .^ 2);  # calculating a χ² statistic
+    return -0.5 * χ²
 end
 
 function main()
@@ -142,4 +144,4 @@ function main()
     end
 end
 
-main();
+# main();
