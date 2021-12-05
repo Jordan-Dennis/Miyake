@@ -1,14 +1,10 @@
 # To Do's:
  - I need to look into |> operator for simplicity -- SERIOUSLY 
- - So I want to generalise now at the end.
-    - This will require an equilbrium calculation with steady_state_production arg
  - Error catching is a priority 
 
 # Plan
- - Lower priority is fixing Github 
- - Fix the local declarations -- Current priority 
+ - Fix the local declarations 
  - Generalisation to any of the prebuilt models is important
-    - Equilibriate function required
 
 # Dumping thoughts
  - I want to refactor the code and have it more general
@@ -22,5 +18,7 @@
       - This is including the generalisations and the derivatives 
  - I will have the analysis script in under _50_ lines
 
+So everything is currently a mess. I have not got parameters passing the way that I want I am going to simply remove the burn_in function and move it into main. Passing the steady state as a parameter to the run_solvers. This is much better. I also want to do something about that horrible production functipon. Maybe I can be fancy with some function programming techniques.
 
+I will not be generalising any more since I will make the assumption that the behaviour of the guttler 2014 model is sufficient for the remaining models. The last thing to do in my script would be to organise the profiling of the gradients which I have nearly got worked out. 
 
