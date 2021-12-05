@@ -108,15 +108,16 @@ function profile_solvers(solvers::Vector, ∇::Function, u0::Vector{Float64},
 end
 
 """
-Profiles the derivatives 
+Calculates the gradient using a χ² loss function. 
 """
-function profile_gradients(solvers::Vector, ∇::Function, u0::Vector{Float64},
-        parameters ::Vector)
+function profile_gradients(solver, ∇::Function, u0::Vector{Float64},
+        parameters::Vector)
     local solution = run_solver(solver, ∇, u0, parameters); #! need consistent naming conventions for parameters
     local ΔC14 = solution[2:end] - solution[1:end - 1];     # Calculating the modelled DC14
 
-    local miyake = DataFrame(CSV.File("Miyake12.csv"));         # Reading the Miyake data
-    local χ² = sum(((miyake.dc14 .- ΔC14) ./ miyake.sig_d14c) .^ 2);  # calculating a χ² statistic
+    local miyake = DataFrame(CSV.File("Miyake12.csv"));                     # Reading the Miyake data
+    local χ² = sum(((miyake.d14c .- ΔC14[1:28]) ./ miyake.sig_d14c) .^ 2);  # calculating a χ² statistic
+    #! The Chi squared is huge
     return -0.5 * χ²
 end
 
