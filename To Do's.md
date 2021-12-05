@@ -2,8 +2,6 @@
  - I need to look into |> operator for simplicity -- SERIOUSLY 
  - Error catching is a priority 
 
-This is a test of the remote repositiory
-
 # Plan
  - Fix the local declarations 
  - Generalisation to any of the prebuilt models is important
@@ -24,3 +22,4 @@ So everything is currently a mess. I have not got parameters passing the way tha
 
 I will not be generalising any more since I will make the assumption that the behaviour of the guttler 2014 model is sufficient for the remaining models. The last thing to do in my script would be to organise the profiling of the gradients which I have nearly got worked out. 
 
+Run_solvers needs desparately to be fixed or removed.

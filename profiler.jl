@@ -71,29 +71,10 @@ function derivative(x, p, t)
 end 
 
 """
-Runs the model for 1000 years prior to the sampled data and returns the final
-position of the system
-"""
-function burn_in_model(∇, p)
-    local np = Vector(undef, 3);               # Storing the model parameters #? |>  
-    np[1], (np[2], np[3]) = p, read_hd5("Guttler14.hd5"); # Reading the data into the scope 
-    #* fix the naming conventions here like yikes 
-
-    local uf = 3.747273140033743;                       # Correct equilibrium production
-    local equilibrium = np[2] \ (- uf *  1.88 * np[3]); # Brehm equilibriation for Guttler 2014
-
-    local burn_in = ODEProblem(∇, equilibrium, (-360.0, 760.0), np);# Burn in problem  
-    return solve(burn_in, reltol = 1e-6).u[end];                  # Running the model and returning final position
-end
-
-"""
 Takes a list of solvers as an input and runs a multithreaded comparison that 
 stores the time information and the binned output of the ODE solver.
 """
-function profile_solvers(solvers::Vector, ∇::Function)::DataFrame
-    #! FLAG here this is very unclear 
-    local x = burn_in_model(∇, 11.0);  # Running the burn in for an initial set-up
-
+function profile_solvers(solvers::Vector, ∇::Function, u0::Vector{Float64})::DataFrame
     local C14 = Matrix{Float64}(undef, length(solvers), 31);    # Creating the storage Matrix 
     local t_mean = Vector{Float64}(undef, length(solvers));     # For the mean of the times
     local t_var = Vector{Float64}(undef, length(solvers));      # For the time varience 
@@ -103,7 +84,7 @@ function profile_solvers(solvers::Vector, ∇::Function)::DataFrame
         local time_sample = Vector{Float64}(undef, 10); # A vector to hold the different run times of each trial 
         for i in 1:10
             local timer = time();                   # Starting a timer
-            solution = run_solver(solver(), ∇, x);  # Running the solver
+            solution = run_solver(solver(), ∇, u0); # Running the solver
             time_sample[i] = time() - timer;        # ending the timer 
             
             if length(solution) !== 31                                  # Checking that the solver had the appropriate resolution 
@@ -129,6 +110,16 @@ function profile_solvers(solvers::Vector, ∇::Function)::DataFrame
 end
 
 function main()
+    #! FLAG very unclear
+    local parameters = Vector(undef, 3);                        # Storing the model parameters #? |>  
+    (parameters[2], parameters[3]) = read_hd5("Guttler14.hd5"); # Reading the data into the scope 
+
+    local uf = 3.747273140033743;               # Correct equilibrium production
+    local u0 = np[2] \ (- uf *  1.88 * np[3]);  # Brehm equilibriation for Guttler 2014
+
+    local burn_in = ODEProblem(∇, u0, (-360.0, 760.0), np); # Burn in problem  
+    solve(burn_in, reltol = 1e-6).u[end];                   # Running the model and returning final position
+
     local batch_1 = [Rosenbrock23, ROS34PW1a, QNDF1, ABDF2, 
         ExplicitRK, DP5, TanYam7, Vern6, SSPRK43, VCAB5];   # First batch of solvers 
     local batch_2 = [KenCarp4, TRBDF2, Trapezoid, BS3, Tsit5,
