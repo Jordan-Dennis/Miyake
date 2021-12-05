@@ -1,25 +1,26 @@
 # To Do's:
- - I need to look into |> operator for simplicity
+ - I need to look into |> operator for simplicity -- SERIOUSLY 
  - So I want to generalise now at the end.
     - This will require an equilbrium calculation with steady_state_production arg
  - Error catching is a priority 
 
 # Plan
- - function to multithread solvers in batches (yet to come)
  - Lower priority is fixing Github 
- - Fix the local declarations
+ - Fix the local declarations -- Current priority 
  - Generalisation to any of the prebuilt models is important
     - Equilibriate function required
 
 # Dumping thoughts
- - So I have the derivatives working 
  - I want to refactor the code and have it more general
- - Let's get the mutlithreaded implementation going and then 
- create a temporary file for the derivatives.
- 
+ - Should I split up the profile solvers function into smaller 
+   functions
+ - I also have to profile the gradients and the solvers separately
+  which means running exactly twice as much as I would like 
+ - I think I should declare $\del$ as a proper function -- NOW
 
 # Goals
- - I want to have the profiling script in under _100_ lines 
+ - I want to have the profiling script in under _200_ lines 
+      - This is including the generalisations and the derivatives 
  - I will have the analysis script in under _50_ lines
 
 

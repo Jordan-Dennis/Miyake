@@ -52,13 +52,20 @@ end
 Passed a solver function runs the solver and returns the speed and binned data
 """
 function run_solver(solver, ∇::Function, U0::Vector{Float64})
-    problem = ODEProblem(∇, U0, (760.0, 790.0));            # Creating the ODEProblem instance
-    solution = solve(problem, reltol = 1e-6, solver); # Solving the ODE over the period of interest 
-
-    time = Array(solution.t);               # Storing the time sampling 
+    local problem = ODEProblem(∇, U0, (760.0, 790.0));      # Creating the ODEProblem instance
+    local solution = solve(problem, reltol = 1e-6, solver); # Solving the ODE over the period of interest 
+    local time = Array(solution.t);                         # Storing the time sampling 
+    
     solution = Array(solution)[2, 1:end];   # Storing the solution for troposphere 
-    return bin(time, solution);             # Binning the results into years 
+    solution = bin(time, solution);         # Getting the annual means
+    return solution;                        # Binning the results into years 
 end
+
+"""
+Runs the model for 1000 years prior to the sampled data and returns the final
+position of the system
+"""
+
 
 """
 Takes a list of solvers as an input and runs a multithreaded comparison that 
@@ -67,8 +74,8 @@ stores the time information and the binned output of the ODE solver.
 function profile_solvers(solvers::Vector)::DataFrame
     local (TO, P) = read_hd5("Guttler14.hd5");  # Reading the data into the scope 
     
-    local uf = 3.747273140033743;  # Correct equilibrium production
-    local equilibrium = TO \ (- uf *  1.88 * P);   # Brehm equilibriation for Guttler 2014
+    local uf = 3.747273140033743;                   # Correct equilibrium production
+    local equilibrium = TO \ (- uf *  1.88 * P);    # Brehm equilibriation for Guttler 2014
 
     ∇(y, p, t) = vec(TO * y + production(t) * P);               # Calculates the derivative
     local burn_in = ODEProblem(∇, equilibrium, (-360.0, 760.0));# Burn in problem  
@@ -85,7 +92,15 @@ function profile_solvers(solvers::Vector)::DataFrame
             local timer = time();                               # Starting a timer
             solution = run_solver(solver(), ∇, burn_in[end]);   # Running the solver
             time_sample[i] = time() - timer;                    # ending the timer 
-            if i == 10
+            
+            #! not a big fan of this
+            if length(solution) !== 31                                  # Checking that the solver had the appropriate resolution 
+                local dims = size(C14);                                 # soft dimensions to save multiple function calls 
+                local nC14 = Matrix{Float64}(undef, dims[1], dims[2]);  # Creating the new array to house the values
+                nC14[1:index - 1, 1:31] = C14[1:index - 1, 1:31];       # Filling with the old values 
+                C14 = nC14;                                             # Assigning over the old matrix 
+                break
+            elseif i == 10                      # Storing final run
                 C14[index, 1:end] = solution;   # filling C14
             end
         end
@@ -102,15 +117,22 @@ function profile_solvers(solvers::Vector)::DataFrame
 end
 
 function main()
-    solvers = [Rosenbrock23, ROS34PW1a, QNDF1, ABDF2, ExplicitRK,
-        DP5, TanYam7, Vern6, SSPRK43, VCAB5];           # A list of solvers
-    #? I want to bring more into this surface level when I generalise 
-    r = profile_solvers(solvers);                       # Calling the program
+    local batch_1 = [Rosenbrock23, ROS34PW1a, QNDF1, ABDF2, 
+        ExplicitRK, DP5, TanYam7, Vern6, SSPRK43, VCAB5];   # First batch of solvers 
+    local batch_2 = [KenCarp4, TRBDF2, Trapezoid, BS3, Tsit5,
+        RadauIIA5, SRIW1, Rodas5, AutoVern7, Kvaerno5]      # Second batch of solvers    
+    
+    test = time();
+    @async r = profile_solvers(batch_1); # Running the first batch of solvers 
+    b = profile_solvers(batch_2); # Running the second batch in parallel
+    println(time() - test)
 
-    if isfile("solver_profiles.csv");                       # Checking for the .csv file 
-        CSV.write("solver_profiles.csv", r, append=true);   # Adding new solvers to the CSV
+    local profiles = vcat(r, b)
+    
+    if isfile("solver_profiles.csv");                           # Checking for the .csv file 
+        CSV.write("solver_profiles.csv", profiles, append=true);# Adding new solvers to the CSV
     else 
-        CSV.write("solver_profiles.csv", r, append=false);  # Creating the file if it does not exist 
+        CSV.write("solver_profiles.csv", profiles, append=false);# Creating the file if it does not exist 
     end
 end
 
