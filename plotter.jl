@@ -3,6 +3,7 @@ using DataFrames;   # For convinient storage
 using Gadfly;       # for generating the plots
 
 r = DataFrame(CSV.File("solver_profiles.csv"));  # Reading data into the workspace
+r = r[2:end, 1:end];
 
 datavisual = Gadfly.plot(# Plot object for manipultation 
     y=r.accuracy, x=r.time_mean, label=r.solver,    # Raw data 
