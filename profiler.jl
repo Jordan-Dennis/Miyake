@@ -5,7 +5,7 @@ using Statistics;               # Let's get this fucking bread
 using DataFrames;               # For succinct data manipulation
 using CSV;                      # For writing the data to prevent constant re-running
 using ForwardDiff;              # For profiling the gradients
-using DynamicPipe;              # For better code
+using DynamicPipe;              # For better code #! FLAG
 
 """
 Takes time series data and calculates the average of each year.
