@@ -88,7 +88,7 @@ function profile_solvers(solvers::Vector, ∇::Function, u0::Vector{Float64},
             local timer = time();                       # Starting a timer
             solution = run_solver(solver(), ∇, u0, p);  # Running the solver
             time_sample[i] = time() - timer;            # ending the timer 
-            
+
             if i == 10                      # Storing final run
                 C14[index, 1:end] = solution;   # filling C14
             end
@@ -107,14 +107,16 @@ function profile_solvers(solvers::Vector, ∇::Function, u0::Vector{Float64},
     return results
 end
 
-# """
-# Profiles the derivatives 
-# """
-# function profile_gradients(∇::Function, u0::Vector{Float64}, parameters ::Vector)
-#     solution(p) = @>> ODEProblem(∇, u0, (760.0, 790.0), p) |>
-#         solve(_, reltol=1e-6);                              # function for auto diff
-#     return ForwardDiff.gradient(solution, parameters);      # Implementation 1
-# end
+"""
+Profiles the derivatives 
+"""
+function profile_gradients(∇::Function, u0::Vector{Float64}, parameters ::Vector)
+    # solution(p) = @>> ODEProblem(∇, u0, (760.0, 790.0), p) |>
+    #     solve(_, reltol=1e-6);                              # function for auto diff
+    # return ForwardDiff.gradient(solution, parameters);      # Implementation 1
+    local miyake = DataFrame(CSV.File("Miyake12.csv")); # Reading the Miyake data
+    χ² = miyake.dc14 ./ miyake.sig_d14c;                # calculating a χ² statistic
+end
 
 function main()
     local parameters = Vector(undef, 3);                        # Storing the model parameters #? |>  
