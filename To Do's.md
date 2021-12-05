@@ -18,3 +18,5 @@ Pipes is something that I will implement at the end.
 So the next problem is that the $\Delta C14$ is measured as a percentage and as a result I need to add this to the calculations. It also means that I have been plotting the wrong thing this entire time. 
 
 The relevant bit of ticktack code seems to be `d_14_c = (data[:, index] - box_steady_state) / box_steady_state * 1000`, where data comes from the function `run_bin`. This resutrns the actual C14 concentrations.Now I just need to work out how to get the `box_steady_state`. It is literally retrieved from the brehm equilibriation. That is easy dope but -> Possibly problematic.
+
+In the main scope I plan to run `profile_gradients` using the afore constructed equilibrium position. This will prevent that repetition. I still need to run the burn in period, which can also be passed as `u0` whereas I will use `steady_state` to represent the already burnt in position.
