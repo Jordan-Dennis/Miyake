@@ -12,11 +12,10 @@
 
 # Dumping thoughts
  - I want to refactor the code and have it more general
- - Should I split up the profile solvers function into smaller 
-   functions
  - I also have to profile the gradients and the solvers separately
   which means running exactly twice as much as I would like 
- - I think I should declare $\del$ as a proper function -- NOW
+ - Things are getting very long and I am not a big fan
+ - static typing only once everything is working 
 
 # Goals
  - I want to have the profiling script in under _200_ lines 

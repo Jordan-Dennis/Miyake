@@ -52,42 +52,48 @@ end
 
 """
 A function that calculates the gradient of the model at a specific time, `t::Float64`
-with parameters, `p::Array` and position `x::Vector{Float64}`
+with parameters, `p::Array` and position `x::Vector{Float64}`. p holds the 1: period 
+of the production function, 2: The transfer operator of the model, and 3: the 
+projection of the production function into the system.
 """
-function derivative(x::Vector{Float64}, p::Float64, t::Float64)::Vector{Float64}
+function derivative(x, p, t)
     """
     Calculates the production of C14 based on the projection based on the model 
     presented in the _Guttler 2014_ paper.
     """
-    function production(t, p)                                       
+    function production(t, T)                                       
         local gh::Float64 = 20 * 1.60193418235;  # height of the super-gaussian  
         local uf::Float64 = 3.747273140033743;   # unit correcting factor
-        return uf * (1.88 + 0.18 * 1.88 * sin(2 * π / p * t + 1.25) +   # Sinusoidal production 
+        return uf * (1.88 + 0.18 * 1.88 * sin(2 * π / T * t + 1.25) +   # Sinusoidal production 
             gh * exp(- (12 * (t - 775)) ^ 16));                             # Super gaussian
     end
-    return vec(TO * x + production(p, t) * P);    # Derivative with extra argument 
+    return vec(p[2] * x + production(p[1], t) * p[3]);    # Derivative with extra argument 
 end 
 
 """
 Runs the model for 1000 years prior to the sampled data and returns the final
 position of the system
 """
-function burn_in_model(∇)
-    local (TO, P) = read_hd5("Guttler14.hd5");  # Reading the data into the scope 
-    
-    local uf = 3.747273140033743;                   # Correct equilibrium production
-    local equilibrium = TO \ (- uf *  1.88 * P);    # Brehm equilibriation for Guttler 2014
+function burn_in_model(∇, p)
+    local np = Vector(undef, 3);               # Storing the model parameters #? |>  
+    np[1], (np[2], np[3]) = p, read_hd5("Guttler14.hd5"); # Reading the data into the scope 
+    #* fix the naming conventions here like yikes 
 
-    local burn_in = ODEProblem(derivative, equilibrium, (-360.0, 760.0));# Burn in problem  
-    return solve(burn_in, reltol = 1e-6)[end];                  # Running the model and returning final position
+    local uf = 3.747273140033743;                       # Correct equilibrium production
+    local equilibrium = np[2] \ (- uf *  1.88 * np[3]); # Brehm equilibriation for Guttler 2014
+
+    local burn_in = ODEProblem(∇, equilibrium, (-360.0, 760.0), np);# Burn in problem  
+    return solve(burn_in, reltol = 1e-6).u[end];                  # Running the model and returning final position
 end
-
 
 """
 Takes a list of solvers as an input and runs a multithreaded comparison that 
 stores the time information and the binned output of the ODE solver.
 """
 function profile_solvers(solvers::Vector, ∇::Function)::DataFrame
+    #! FLAG here this is very unclear 
+    local x = burn_in_model(∇, 11.0);  # Running the burn in for an initial set-up
+
     local C14 = Matrix{Float64}(undef, length(solvers), 31);    # Creating the storage Matrix 
     local t_mean = Vector{Float64}(undef, length(solvers));     # For the mean of the times
     local t_var = Vector{Float64}(undef, length(solvers));      # For the time varience 
@@ -96,11 +102,10 @@ function profile_solvers(solvers::Vector, ∇::Function)::DataFrame
     for (index, solver) in enumerate(solvers)           # Looping over the solvers 
         local time_sample = Vector{Float64}(undef, 10); # A vector to hold the different run times of each trial 
         for i in 1:10
-            local timer = time();                               # Starting a timer
-            solution = run_solver(solver(), ∇, burn_in[end]);   # Running the solver
-            time_sample[i] = time() - timer;                    # ending the timer 
+            local timer = time();                   # Starting a timer
+            solution = run_solver(solver(), ∇, x);  # Running the solver
+            time_sample[i] = time() - timer;        # ending the timer 
             
-            #! not a big fan of this
             if length(solution) !== 31                                  # Checking that the solver had the appropriate resolution 
                 local dims = size(C14);                                 # soft dimensions to save multiple function calls 
                 local nC14 = Matrix{Float64}(undef, dims[1], dims[2]);  # Creating the new array to house the values
@@ -130,8 +135,8 @@ function main()
         RadauIIA5, SRIW1, Rodas5, AutoVern7, Kvaerno5]      # Second batch of solvers    
     
     test = time();
-    @async r = profile_solvers(batch_1); # Running the first batch of solvers 
-    b = profile_solvers(batch_2); # Running the second batch in parallel
+    @async r = profile_solvers(batch_1, derivative); # Running the first batch of solvers 
+    b = profile_solvers(batch_2, derivative); # Running the second batch in parallel
     println(time() - test)
 
     local profiles = vcat(r, b)
