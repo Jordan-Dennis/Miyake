@@ -20,17 +20,6 @@ function bin(time_series::Vector{Float64}, solution_vector::Vector{Float64})::Ve
 end
 
 """
-Calculates the production of C14 based on the projection based on the model 
-presented in the _Guttler 2014_ paper.
-"""
-function production(year)                                       
-    local gh::Float64 = 20 * 1.60193418235;  # height of the super-gaussian  
-    local uf::Float64 = 3.747273140033743;   # unit correcting factor
-    return uf * (1.88 + 0.18 * 1.88 * sin(2 * π / 11 * year + 1.25) +   # Sinusoidal production 
-        gh * exp(- (12 * (year - 775)) ^ 16));                             # Super gaussian
-end
-
-"""
 Reads the flux (amounts), production (projection) and reserviour contents from 
 a .hd5 file with file_name. It returns the transfer operator and production 
 projection 
@@ -62,29 +51,43 @@ function run_solver(solver, ∇::Function, U0::Vector{Float64})
 end
 
 """
+A function that calculates the gradient of the model at a specific time, `t::Float64`
+with parameters, `p::Array` and position `x::Vector{Float64}`
 """
-
+function derivative(x::Vector{Float64}, p::Float64, t::Float64)::Vector{Float64}
+    """
+    Calculates the production of C14 based on the projection based on the model 
+    presented in the _Guttler 2014_ paper.
+    """
+    function production(t, p)                                       
+        local gh::Float64 = 20 * 1.60193418235;  # height of the super-gaussian  
+        local uf::Float64 = 3.747273140033743;   # unit correcting factor
+        return uf * (1.88 + 0.18 * 1.88 * sin(2 * π / p * t + 1.25) +   # Sinusoidal production 
+            gh * exp(- (12 * (t - 775)) ^ 16));                             # Super gaussian
+    end
+    return vec(TO * x + production(p, t) * P);    # Derivative with extra argument 
+end 
 
 """
 Runs the model for 1000 years prior to the sampled data and returns the final
 position of the system
 """
+function burn_in_model(∇)
+    local (TO, P) = read_hd5("Guttler14.hd5");  # Reading the data into the scope 
+    
+    local uf = 3.747273140033743;                   # Correct equilibrium production
+    local equilibrium = TO \ (- uf *  1.88 * P);    # Brehm equilibriation for Guttler 2014
+
+    local burn_in = ODEProblem(derivative, equilibrium, (-360.0, 760.0));# Burn in problem  
+    return solve(burn_in, reltol = 1e-6)[end];                  # Running the model and returning final position
+end
 
 
 """
 Takes a list of solvers as an input and runs a multithreaded comparison that 
 stores the time information and the binned output of the ODE solver.
 """
-function profile_solvers(solvers::Vector)::DataFrame
-    local (TO, P) = read_hd5("Guttler14.hd5");  # Reading the data into the scope 
-    
-    local uf = 3.747273140033743;                   # Correct equilibrium production
-    local equilibrium = TO \ (- uf *  1.88 * P);    # Brehm equilibriation for Guttler 2014
-
-    ∇(y, p, t) = vec(TO * y + production(t) * P);               # Calculates the derivative
-    local burn_in = ODEProblem(∇, equilibrium, (-360.0, 760.0));# Burn in problem  
-    local burn_in = solve(burn_in, reltol = 1e-6);              # Running the brun in
-
+function profile_solvers(solvers::Vector, ∇::Function)::DataFrame
     local C14 = Matrix{Float64}(undef, length(solvers), 31);    # Creating the storage Matrix 
     local t_mean = Vector{Float64}(undef, length(solvers));     # For the mean of the times
     local t_var = Vector{Float64}(undef, length(solvers));      # For the time varience 
