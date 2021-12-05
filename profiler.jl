@@ -112,17 +112,19 @@ function profile_solvers(solvers::Vector, ∇::Function, u0::Vector{Float64},
     return results
 end
 
-"""
-
-"""
-function profile_gradients()
-    
-end
+# """
+# Profiles the derivatives 
+# """
+# function profile_gradients(∇::Function, u0::Vector{Float64}, parameters ::Vector)
+#     solution(p) = @>> ODEProblem(∇, u0, (760.0, 790.0), p) |>
+#         solve(_, reltol=1e-6);                              # function for auto diff
+#     return ForwardDiff.gradient(solution, parameters);      # Implementation 1
+# end
 
 function main()
     local parameters = Vector(undef, 3);                        # Storing the model parameters #? |>  
     (parameters[2], parameters[3]) = read_hd5("Guttler14.hd5"); # Reading the data into the scope 
-
+    parameters[1] = 11.0;                                       # Setting period for burn in
     #! Flag
     local uf = 3.747273140033743;                               # Correct equilibrium production
     local u0 = parameters[2] \ (- uf *  1.88 * parameters[3]);  # Brehm equilibriation for Guttler 2014
@@ -134,7 +136,7 @@ function main()
     local batch_1 = [Rosenbrock23, ROS34PW1a, QNDF1, ABDF2, 
         ExplicitRK, DP5, TanYam7, Vern6, SSPRK43, VCAB5];   # First batch of solvers 
     local batch_2 = [KenCarp4, TRBDF2, Trapezoid, BS3, Tsit5,
-        RadauIIA5, SRIW1, Rodas5, AutoVern7, Kvaerno5]      # Second batch of solvers    
+        RadauIIA5, SRIW1, Rodas5, Kvaerno5]      # Second batch of solvers    
     
     test = time();
     @async r = profile_solvers(batch_1, derivative, position, parameters); # Running the first batch of solvers 
@@ -149,3 +151,5 @@ function main()
         CSV.write("solver_profiles.csv", profiles, append=false);# Creating the file if it does not exist 
     end
 end
+
+main();

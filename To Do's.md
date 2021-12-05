@@ -28,4 +28,6 @@ I only need to worry about p when I am doing the derivatives yet I have now thou
 
 I also still need to check that the `@async` is actually fast
 
-Pipes is something that I will implement at the end.
+Pipes is something that I will implement at the end.\
+
+I need to look into the loss function for the profile gradients function.
