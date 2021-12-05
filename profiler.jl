@@ -5,6 +5,7 @@ using Statistics;               # Let's get this fucking bread
 using DataFrames;               # For succinct data manipulation
 using CSV;                      # For writing the data to prevent constant re-running
 using ForwardDiff;              # For profiling the gradients
+using DynamicPipe;              # For better code
 
 """
 Takes time series data and calculates the average of each year.
@@ -40,8 +41,8 @@ end
 """
 Passed a solver function runs the solver and returns the speed and binned data
 """
-function run_solver(solver, ∇::Function, U0::Vector{Float64})
-    local problem = ODEProblem(∇, U0, (760.0, 790.0));      # Creating the ODEProblem instance
+function run_solver(solver, ∇::Function, U0::Vector{Float64}, p::Vector{Any})::Vector{Float64}
+    local problem = ODEProblem(∇, U0, (760.0, 790.0), p);      # Creating the ODEProblem instance
     local solution = solve(problem, reltol = 1e-6, solver); # Solving the ODE over the period of interest 
     local time = Array(solution.t);                         # Storing the time sampling 
     
@@ -67,25 +68,27 @@ function derivative(x, p, t)
         return uf * (1.88 + 0.18 * 1.88 * sin(2 * π / T * t + 1.25) +   # Sinusoidal production 
             gh * exp(- (12 * (t - 775)) ^ 16));                             # Super gaussian
     end
-    return vec(p[2] * x + production(p[1], t) * p[3]);    # Derivative with extra argument 
+    return vec(p[2] * x + production(t, p[1]) * p[3]);    # Derivative with extra argument 
 end 
 
 """
 Takes a list of solvers as an input and runs a multithreaded comparison that 
 stores the time information and the binned output of the ODE solver.
 """
-function profile_solvers(solvers::Vector, ∇::Function, u0::Vector{Float64})::DataFrame
+function profile_solvers(solvers::Vector, ∇::Function, u0::Vector{Float64},
+        p::Vector)::DataFrame
     local C14 = Matrix{Float64}(undef, length(solvers), 31);    # Creating the storage Matrix 
     local t_mean = Vector{Float64}(undef, length(solvers));     # For the mean of the times
     local t_var = Vector{Float64}(undef, length(solvers));      # For the time varience 
     local results = DataFrame(solver = @.string(solvers));      # DataFrame of summary Statistics
 
+    p[1] = 11.0;    # Setting the period of the production function  
     for (index, solver) in enumerate(solvers)           # Looping over the solvers 
         local time_sample = Vector{Float64}(undef, 10); # A vector to hold the different run times of each trial 
         for i in 1:10
-            local timer = time();                   # Starting a timer
-            solution = run_solver(solver(), ∇, u0); # Running the solver
-            time_sample[i] = time() - timer;        # ending the timer 
+            local timer = time();                       # Starting a timer
+            solution = run_solver(solver(), ∇, u0, p);  # Running the solver
+            time_sample[i] = time() - timer;            # ending the timer 
             
             if length(solution) !== 31                                  # Checking that the solver had the appropriate resolution 
                 local dims = size(C14);                                 # soft dimensions to save multiple function calls 
@@ -109,16 +112,24 @@ function profile_solvers(solvers::Vector, ∇::Function, u0::Vector{Float64})::D
     return results
 end
 
+"""
+
+"""
+function profile_gradients()
+    
+end
+
 function main()
-    #! FLAG very unclear
     local parameters = Vector(undef, 3);                        # Storing the model parameters #? |>  
     (parameters[2], parameters[3]) = read_hd5("Guttler14.hd5"); # Reading the data into the scope 
 
-    local uf = 3.747273140033743;               # Correct equilibrium production
-    local u0 = np[2] \ (- uf *  1.88 * np[3]);  # Brehm equilibriation for Guttler 2014
+    #! Flag
+    local uf = 3.747273140033743;                               # Correct equilibrium production
+    local u0 = parameters[2] \ (- uf *  1.88 * parameters[3]);  # Brehm equilibriation for Guttler 2014
 
-    local burn_in = ODEProblem(∇, u0, (-360.0, 760.0), np); # Burn in problem  
-    solve(burn_in, reltol = 1e-6).u[end];                   # Running the model and returning final position
+    local position = @>> ODEProblem(derivative, u0, #! Yay Pipes
+        (-360.0, 760.0), parameters) |>             # Burn in problem  
+        solve(_, reltol=1e-6).u[end];               # Running the model and returning final position
 
     local batch_1 = [Rosenbrock23, ROS34PW1a, QNDF1, ABDF2, 
         ExplicitRK, DP5, TanYam7, Vern6, SSPRK43, VCAB5];   # First batch of solvers 
@@ -126,8 +137,8 @@ function main()
         RadauIIA5, SRIW1, Rodas5, AutoVern7, Kvaerno5]      # Second batch of solvers    
     
     test = time();
-    @async r = profile_solvers(batch_1, derivative); # Running the first batch of solvers 
-    b = profile_solvers(batch_2, derivative); # Running the second batch in parallel
+    @async r = profile_solvers(batch_1, derivative, position, parameters); # Running the first batch of solvers 
+    b = profile_solvers(batch_2, derivative, position, parameters); # Running the second batch in parallel
     println(time() - test)
 
     local profiles = vcat(r, b)
@@ -138,5 +149,3 @@ function main()
         CSV.write("solver_profiles.csv", profiles, append=false);# Creating the file if it does not exist 
     end
 end
-
-main();
