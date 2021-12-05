@@ -52,26 +52,6 @@ function run_solver(solver, ∇::Function, U0::Vector{Float64}, p::Vector{Any}):
 end
 
 """
-A function that calculates the gradient of the model at a specific time, `t::Float64`
-with parameters, `p::Array` and position `x::Vector{Float64}`. p holds the 1: period 
-of the production function, 2: The transfer operator of the model, and 3: the 
-projection of the production function into the system.
-"""
-function derivative(x, p, t)
-    """
-    Calculates the production of C14 based on the projection based on the model 
-    presented in the _Guttler 2014_ paper.
-    """
-    function production(t, T)                                       
-        local gh::Float64 = 20 * 1.60193418235;  # height of the super-gaussian  
-        local uf::Float64 = 3.747273140033743;   # unit correcting factor
-        return uf * (1.88 + 0.18 * 1.88 * sin(2 * π / T * t + 1.25) +   # Sinusoidal production 
-            gh * exp(- (12 * (t - 775)) ^ 16));                             # Super gaussian
-    end
-    return vec(p[2] * x + production(t, p[1]) * p[3]);    # Derivative with extra argument 
-end 
-
-"""
 Takes a list of solvers as an input and runs a multithreaded comparison that 
 stores the time information and the binned output of the ODE solver.
 """
@@ -123,16 +103,27 @@ function profile_gradients(solver, ∇::Function, u0::Vector{Float64},
     #? For generating the test plot I have the following things 
     # plot(layer(x=miyake.year, y=miyake.d14c, Geom.point),
     #     layer(x=miyake.year, y=ΔC14, Geom.line));
+    #! I need to resume from the testing here
 
 end
 
 function main()
-    local parameters = Vector(undef, 3);                        # Storing the model parameters #? |>  
-    (parameters[2], parameters[3]) = read_hd5("Guttler14.hd5"); # Reading the data into the scope 
-    parameters[1] = 11.0;                                       # Setting period for burn in
-    #! Flag
-    local uf = 3.747273140033743;                               # Correct equilibrium production
-    local u0 = parameters[2] \ (- uf *  1.88 * parameters[3]);  # Brehm equilibriation for Guttler 2014
+    TO, P = read_hd5("Guttler14.hd5");      # Reading the data into the scope 
+
+    local parameters = Vector(undef, 6);    # Storing the model parameters 
+    parameters[1] = 7.044873503263437;      # The mean position of the sinusoid 
+    parameters[2] = 0.18;                   # The modulation of the sinusoid w. r. t the mean
+    parameters[3] = 11.0;                   # Setting period of the sinusoid 
+    parameters[4] = 1.25;                   # The phase shift of the sinusoid
+    parameters[5] = 120.05769867244142;     # The height of the super gaussian 
+    parameters[6] = 12;                     # Width of the super-gaussian 
+
+    production(t, parameters) = parameters[1] * (1 + parameters[2] * 
+        sin(2 * π / parameters[3] * t + parameters[4])) +               # Sinusoidal production 
+        parameters[5] * exp(- (parameters[6] * (t - 775)) ^ 16);        # Super Gaussian event
+    derivative(x, parameters, t) = vec(TO * x + production(t, parameters) * P);  # The derivative of the system 
+
+    local u0 = TO \ (- parameters[1] * P);  # Brehm equilibriation for Guttler 2014
 
     local position = @>> ODEProblem(derivative, u0, #! Yay Pipes Kind of 
         (-360.0, 760.0), parameters) |>             # Burn in problem  
