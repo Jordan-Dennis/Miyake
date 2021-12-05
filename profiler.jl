@@ -134,16 +134,11 @@ function main()
         solve(_, reltol=1e-6).u[end];               # Running the model and returning final position
 
     local batch_1 = [Rosenbrock23, ROS34PW1a, QNDF1, ABDF2, 
-        ExplicitRK, DP5, TanYam7, Vern6, SSPRK43, VCAB5];   # First batch of solvers 
-    local batch_2 = [KenCarp4, TRBDF2, Trapezoid, BS3, Tsit5,
-        RadauIIA5, SRIW1, Rodas5, Kvaerno5]      # Second batch of solvers    
+        ExplicitRK, DP5, TanYam7, Vern6, SSPRK43, VCAB5,
+        KenCarp4, TRBDF2, Trapezoid, BS3, Tsit5,
+        RadauIIA5, SRIW1, Rodas5, Kvaerno5]
     
-    test = time();
-    @async r = profile_solvers(batch_1, derivative, position, parameters); # Running the first batch of solvers 
-    b = profile_solvers(batch_2, derivative, position, parameters); # Running the second batch in parallel
-    println(time() - test)
-
-    local profiles = vcat(r, b)
+    profiles = profile_solvers(batch_1, derivative, position, parameters); # Running the first batch of solvers 
     
     if isfile("solver_profiles.csv");                           # Checking for the .csv file 
         CSV.write("solver_profiles.csv", profiles, append=true);# Adding new solvers to the CSV
