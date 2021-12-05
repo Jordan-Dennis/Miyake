@@ -41,7 +41,8 @@ end
 """
 Passed a solver function runs the solver and returns the speed and binned data
 """
-function run_solver(solver, ∇::Function, U0::Vector{Float64}, p::Vector{Any})::Vector{Float64}
+function run_solver(solver, ∇::Function, U0::Vector{Float64},
+        p::Vector{Float64})::Vector{Float64}
     local problem = ODEProblem(∇, U0, (760.0, 790.0), p);      # Creating the ODEProblem instance
     local solution = solve(problem, reltol = 1e-6, solver); # Solving the ODE over the period of interest 
     local time = Array(solution.t);                         # Storing the time sampling 
@@ -91,14 +92,14 @@ end
 Calculates the gradient using a χ² loss function. 
 """
 function profile_gradients(solver, ∇::Function, u0::Vector{Float64},
-        parameters::Vector, steady_state::Vector{Float64})  
+        parameters::Vector{Float64}, steady_state::Vector{Float64})  
     
     local solution = run_solver(solver, ∇, u0, parameters);         #! need consistent naming conventions for parameters
-    local ΔC14 = (solution .- steady_state) ./ steady_state * 1000; # Calculating the modelled DC14
+    local ΔC14 = (solution .- steady_state[2]) ./ steady_state[2] .* 1000; # Calculating the modelled DC14
 
     local miyake = DataFrame(CSV.File("Miyake12.csv"));                     # Reading the Miyake data
     local χ² = sum(((miyake.d14c .- ΔC14[1:28]) ./ miyake.sig_d14c) .^ 2);  # calculating a χ² statistic
-    return -0.5 * χ², ΔC14, solution
+    return -0.5 * χ²
 
     #? For generating the test plot I have the following things 
     # plot(layer(x=miyake.year, y=miyake.d14c, Geom.point),
@@ -107,38 +108,41 @@ function profile_gradients(solver, ∇::Function, u0::Vector{Float64},
 
 end
 
-function main()
+# function main()
     TO, P = read_hd5("Guttler14.hd5");      # Reading the data into the scope 
 
-    local parameters = Vector(undef, 6);    # Storing the model parameters 
-    parameters[1] = 7.044873503263437;      # The mean position of the sinusoid 
-    parameters[2] = 0.18;                   # The modulation of the sinusoid w. r. t the mean
-    parameters[3] = 11.0;                   # Setting period of the sinusoid 
-    parameters[4] = 1.25;                   # The phase shift of the sinusoid
-    parameters[5] = 120.05769867244142;     # The height of the super gaussian 
-    parameters[6] = 12;                     # Width of the super-gaussian 
+    params = Vector{Float64}(undef, 6);   # Storing the model params 
+    params[1] = 7.044873503263437;              # The mean position of the sinusoid 
+    params[2] = 0.18;                           # The modulation of the sinusoid w. r. t the mean
+    params[3] = 11.0;                           # Setting period of the sinusoid 
+    params[4] = 1.25;                           # The phase shift of the sinusoid
+    params[5] = 120.05769867244142;             # The height of the super gaussian 
+    params[6] = 12.0;                           # Width of the super-gaussian 
 
-    production(t, parameters) = parameters[1] * (1 + parameters[2] * 
-        sin(2 * π / parameters[3] * t + parameters[4])) +               # Sinusoidal production 
-        parameters[5] * exp(- (parameters[6] * (t - 775)) ^ 16);        # Super Gaussian event
-    derivative(x, parameters, t) = vec(TO * x + production(t, parameters) * P);  # The derivative of the system 
+    production(t, params) = params[1] * (1 + params[2] * 
+        sin(2 * π / params[3] * t + params[4])) +               # Sinusoidal production 
+        params[5] * exp(- (params[6] * (t - 775)) ^ 16);        # Super Gaussian event
+    derivative(x, params, t) = vec(TO * x + production(t, params) * P);  # The derivative of the system 
 
-    local u0 = TO \ (- parameters[1] * P);  # Brehm equilibriation for Guttler 2014
+    u0 = TO \ (- params[1] * P);  # Brehm equilibriation for Guttler 2014
 
-    local position = @>> ODEProblem(derivative, u0, #! Yay Pipes Kind of 
-        (-360.0, 760.0), parameters) |>             # Burn in problem  
+    position = @>> ODEProblem(derivative, u0, #! Yay Pipes Kind of 
+        (-360.0, 760.0), params) |>             # Burn in problem  
         solve(_, reltol=1e-6).u[end];               # Running the model and returning final position
 
-    local solvers = [TRBDF2, BS3, Tsit5, Rosenbrock23,
-        ROS34PW1a, QNDF1, ABDF2, ExplicitRK, DP5,
-        TanYam7, Vern6];
-    profiles = profile_solvers(solvers, derivative, position, parameters); # Running the first batch of solvers 
+    # local solvers = [TRBDF2, BS3, Tsit5, Rosenbrock23,
+    #     ROS34PW1a, QNDF1, ABDF2, ExplicitRK, DP5,
+    #     TanYam7, Vern6];
+    # profiles = profile_solvers(solvers, derivative, position, params); # Running the first batch of solvers 
     
-    if isfile("solver_profiles.csv");                           # Checking for the .csv file 
-        CSV.write("solver_profiles.csv", profiles, append=true);# Adding new solvers to the CSV
-    else 
-        CSV.write("solver_profiles.csv", profiles, append=false);# Creating the file if it does not exist 
-    end
-end
+    # if isfile("solver_profiles.csv");                           # Checking for the .csv file 
+    #     CSV.write("solver_profiles.csv", profiles, append=true);# Adding new solvers to the CSV
+    # else 
+    #     CSV.write("solver_profiles.csv", profiles, append=false);# Creating the file if it does not exist 
+    # end
+
+    #= Foward and Reverse Autodiff =#
+    profile_gradients(BS3(), derivative, position, params, u0); #? Confusing position reversal
+# end
 
 # main();

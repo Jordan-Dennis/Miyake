@@ -18,3 +18,7 @@ Pipes is something that I will implement at the end.
 In the main scope I plan to run `profile_gradients` using the afore constructed equilibrium position. This will prevent that repetition. I still need to run the burn in period, which can also be passed as `u0` whereas I will use `steady_state` to represent the already burnt in position.
 
 I need to resume from testing the `profile_gradients` function. I think that the solver will have no impact on the gradient. I am more interested in seeing if I should foward autodiff for python. 
+
+If this is the case should I do it inn a separate script? There will be common elements but not the ones that I m thinking. I read to fix the naming conventions and this should be a priority.
+
+So something is going wrong. Either in the solution to the ODE or in the underlying model
