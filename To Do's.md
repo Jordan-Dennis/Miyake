@@ -2,6 +2,8 @@
  - I need to look into |> operator for simplicity -- SERIOUSLY 
  - Error catching is a priority 
 
+This is a test of the remote repositiory
+
 # Plan
  - Fix the local declarations 
  - Generalisation to any of the prebuilt models is important
