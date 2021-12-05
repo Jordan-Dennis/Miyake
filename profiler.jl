@@ -111,18 +111,18 @@ end
 Calculates the gradient using a χ² loss function. 
 """
 function profile_gradients(solver, ∇::Function, u0::Vector{Float64},
-        parameters::Vector)
-    local solution = run_solver(solver, ∇, u0, parameters); #! need consistent naming conventions for parameters
-    local ΔC14 = solution[2:end] - solution[1:end - 1];     # Calculating the modelled DC14
+        parameters::Vector, steady_state::Vector{Float64})  
+    
+    local solution = run_solver(solver, ∇, u0, parameters);         #! need consistent naming conventions for parameters
+    local ΔC14 = (solution .- steady_state) ./ steady_state * 1000; # Calculating the modelled DC14
 
     local miyake = DataFrame(CSV.File("Miyake12.csv"));                     # Reading the Miyake data
     local χ² = sum(((miyake.d14c .- ΔC14[1:28]) ./ miyake.sig_d14c) .^ 2);  # calculating a χ² statistic
-    #! The Chi squared is huge
     return -0.5 * χ², ΔC14, solution
 
     #? For generating the test plot I have the following things 
-    plot(layer(x=miyake.year, y=miyake.d14c, Geom.point),
-        layer(x=miyake.year, y=ΔC14, Geom.line));
+    # plot(layer(x=miyake.year, y=miyake.d14c, Geom.point),
+    #     layer(x=miyake.year, y=ΔC14, Geom.line));
 
 end
 
