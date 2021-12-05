@@ -43,6 +43,7 @@ Passed a solver function runs the solver and returns the speed and binned data
 """
 function run_solver(solver, ∇::Function, U0::Vector{Float64},
         p::Vector{Float64})::Vector{Float64}
+
     local problem = ODEProblem(∇, U0, (760.0, 790.0), p);      # Creating the ODEProblem instance
     local solution = solve(problem, reltol = 1e-6, solver); # Solving the ODE over the period of interest 
     local time = Array(solution.t);                         # Storing the time sampling 
@@ -103,7 +104,7 @@ function profile_gradients(solver, ∇::Function, u0::Vector{Float64},
 
     #? For generating the test plot I have the following things 
     # plot(layer(x=miyake.year, y=miyake.d14c, Geom.point),
-    #     layer(x=miyake.year, y=ΔC14, Geom.line));
+    #     layer(x=miyake.year, y=ΔC14[1:28], Geom.line));
     #! I need to resume from the testing here
 
 end
@@ -119,16 +120,16 @@ end
     params[5] = 120.05769867244142;             # The height of the super gaussian 
     params[6] = 12.0;                           # Width of the super-gaussian 
 
+    # The parameters to the model must be incorrect
     production(t, params) = params[1] * (1 + params[2] * 
         sin(2 * π / params[3] * t + params[4])) +               # Sinusoidal production 
         params[5] * exp(- (params[6] * (t - 775)) ^ 16);        # Super Gaussian event
-    derivative(x, params, t) = vec(TO * x + production(t, params) * P);  # The derivative of the system 
+    derivative(x, params, t) = vec(TO * x - production(t, params) * P);  # The derivative of the system 
 
     u0 = TO \ (- params[1] * P);  # Brehm equilibriation for Guttler 2014
 
-    position = @>> ODEProblem(derivative, u0, #! Yay Pipes Kind of 
-        (-360.0, 760.0), params) |>             # Burn in problem  
-        solve(_, reltol=1e-6).u[end];               # Running the model and returning final position
+    burnproblem = ODEProblem(derivative, u0, (-360.0, 760.0), params); # Burn in problem  
+    burnsolution = solve(burnproblem, reltol=1e-6).u[end];             # Running the model and returning final position
 
     # local solvers = [TRBDF2, BS3, Tsit5, Rosenbrock23,
     #     ROS34PW1a, QNDF1, ABDF2, ExplicitRK, DP5,
