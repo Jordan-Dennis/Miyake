@@ -21,4 +21,6 @@ I need to resume from testing the `profile_gradients` function. I think that the
 
 If this is the case should I do it inn a separate script? There will be common elements but not the ones that I m thinking. I read to fix the naming conventions and this should be a priority.
 
-So something is going wrong. Either in the solution to the ODE or in the underlying model
+So I have found the error. I need to use the Guttler equilibriation to get the correct result. This requires that I upgrade ther method I have been using to equilibriate, which might be better done with its own function to prevent extra assignments in the namespace.
+
+The model should take milli seconds and the gradient should only take seconds and the hessians are not tractable. Look for the offset. Load data has an offset term.

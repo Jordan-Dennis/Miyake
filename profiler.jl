@@ -5,14 +5,14 @@ using Statistics;               # Let's get this fucking bread
 using DataFrames;               # For succinct data manipulation
 using CSV;                      # For writing the data to prevent constant re-running
 using ForwardDiff;              # For profiling the gradients
-using DynamicPipe;              # For better code #! FLAG
+using Optim;                    # For the equilibriation optimisation 
 
 """
 Takes time series data and calculates the average of each year.
 """
 function bin(time_series::Vector{Float64}, solution_vector::Vector{Float64})::Vector{Float64}
     local binned_solution = Vector{Float64}(undef, 0);  # Setting a vector to hold the bins 
-    local whole_times = @. floor(time_series);          # Creating a vector of discrete time.
+    local whole_times = @.floor(time_series);          # Creating a vector of discrete time.
     for whole_time in unique(whole_times)                                           # Looping over the unique elements discrete times 
         local indexes = findall(whole_times .== whole_time);                        # Getting the indexes of the entries 
         append!(binned_solution, mean(solution_vector[indexes]));  # Appending to binned_solution
@@ -125,8 +125,6 @@ end
         sin(2 * π / params[3] * t + params[4])) +               # Sinusoidal production 
         params[5] * exp(- (params[6] * (t - 775)) ^ 16);        # Super Gaussian event
     derivative(x, params, t) = vec(TO * x - production(t, params) * P);  # The derivative of the system 
-
-    u0 = TO \ (- params[1] * P);  # Brehm equilibriation for Guttler 2014
 
     burnproblem = ODEProblem(derivative, u0, (-360.0, 760.0), params); # Burn in problem  
     burnsolution = solve(burnproblem, reltol=1e-6).u[end];             # Running the model and returning final position
