@@ -12,6 +12,8 @@ datavisual = Gadfly.plot(# Plot object for manipultation
     ymax=r.accuracy + r.accuracy_var,   # Y upper error bar
     xmin=r.time_mean - r.time_var,  # X lower error bar
     xmax=r.time_mean + r.time_var,  # X upper error bar
-    Geom.yerrorbar, Geom.xerrorbar, Geom.point, Geom.label)  # Geometries  
+    Geom.yerrorbar, Geom.xerrorbar, Geom.point, Geom.label,
+    Scale.x_log, Scale.y_log)  # Geometries  
 
-savefig(datavisual, "solver_profiles.pdf"); # Saving the figure
+display(datavisual)
+# savefig(datavisual, "solver_profiles.pdf"); # Saving the figure

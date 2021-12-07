@@ -24,3 +24,5 @@ If this is the case should I do it inn a separate script? There will be common e
 So I have found the error. I need to use the Guttler equilibriation to get the correct result. This requires that I upgrade ther method I have been using to equilibriate, which might be better done with its own function to prevent extra assignments in the namespace.
 
 The model should take milli seconds and the gradient should only take seconds and the hessians are not tractable. Look for the offset. Load data has an offset term.
+
+So I need to take the abs and log in the plot 

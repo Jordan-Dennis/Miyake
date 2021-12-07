@@ -71,17 +71,15 @@ function profile_solvers(solvers::Vector, ∇::Function, u0::Vector{Float64},
             solution = run_solver(solver(), ∇, u0, p);  # Running the solver
             time_sample[i] = time() - timer;            # ending the timer 
 
-            if i == 10                      # Storing final run
+            if i == 10                          # Storing final run
                 C14[index, 1:end] = solution;   # filling C14
             end
         end
-        #! If I break inside the loop this will produce an error 
         t_mean[index] = mean(time_sample[2:end]);   # Storing run time ignoring compile run.
         t_var[index] = var(time_sample[2:end]);     # Storing time error
     end 
 
-    #? The first two columns are returning NaN
-    C14 = (C14' .- median(C14, dims=1)')';          # Calculating deviations from median 
+    C14 = abs((C14' .- median(C14, dims=1)')');     # Calculating deviations from median 
     results.accuracy = vec(mean(C14, dims=2));      # Calculating the mean of the deviation from the median 
     results.accuracy_var = vec(var(C14, dims=2));   # Calculating the RMSE error << is better 
     results.time_mean = t_mean;                     # Storing the mean run time
