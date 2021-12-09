@@ -9,7 +9,7 @@ def bs3(x0: np.array, nsteps: np.int16, f, reltol: np.float64, time: np.float64)
     """
     x = np.zeros((len(x0), nsteps)) # Storage for the numerical solution 
     x[:, 0] = x0                       # Storing initial positions
-    h = reltol                      # Setting the initial tolerance 
+    h = 1e-2                      # Setting the initial tolerance 
     
     t = np.zeros(nsteps)    # Saving the times
     t[0] = time             # Adding the first time
@@ -71,5 +71,5 @@ t, x = bs3(x0, 1000, dydx, 1e-6, 760.0)
 print(process_time() - timer)
 
 import matplotlib.pyplot as plt 
-plt.plot(t, x)
+plt.plot(t, x[2, :])
 plt.show()
