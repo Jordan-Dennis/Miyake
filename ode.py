@@ -743,7 +743,7 @@ def odeint_sepaux2(fwd_func, rev_func, y0, t, *args, rtol=1.4e-8, atol=1.4e-8, m
 def _odeint_wrapper(func, rtol, atol, mxstep, y0, ts, *args):
   y0, unravel = ravel_pytree(y0)
   func = ravel_first_arg(func, unravel)
-  out, nfe = _dopri5_odeint(func, rtol, atol, mxstep, y0, ts, *args)
+  out, nfe = _bosh_odeint(func, rtol, atol, mxstep, y0, ts, *args)
   return jax.vmap(unravel)(out), nfe
 
 @partial(jax.jit, static_argnums=(0, 1))
