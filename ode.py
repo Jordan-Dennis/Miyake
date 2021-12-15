@@ -14,17 +14,6 @@
 
 # Note: file has been modified.
 
-"""JAX-based Dormand-Prince ODE integration with adaptive stepsize.
-
-Integrate systems of ordinary differential equations (ODEs) using the JAX
-autograd/diff library and the Dormand-Prince method for adaptive integration
-stepsize calculation. Provides improved integration accuracy over fixed
-stepsize integration methods.
-
-Adjoint algorithm based on Appendix C of https://arxiv.org/pdf/1806.07366.pdf
-"""
-
-
 from functools import partial
 import operator as op
 
@@ -40,9 +29,6 @@ from jax import linear_util as lu
 map = safe_map
 zip = safe_zip
 
-_ADAMS_MAX_ORDER = 12
-
-
 def ravel_first_arg(f, unravel):
   return ravel_first_arg_(lu.wrap_init(f), unravel).call_wrapped
 
@@ -53,25 +39,9 @@ def ravel_first_arg_(unravel, y_flat, *args):
   ans_flat, _ = ravel_pytree(ans)
   yield ans_flat
 
-def interp_fit_dopri(y0, y1, k, dt):
-  # Fit a polynomial to the results of a Runge-Kutta step.
-  dps_c_mid = np.array([
-      6025192743 / 30085553152 / 2, 0, 51252292925 / 65400821598 / 2,
-      -2691868925 / 45128329728 / 2, 187940372067 / 1594534317056 / 2,
-      -1776094331 / 19743644256 / 2, 11237099 / 235043384 / 2])
-  y_mid = y0 + dt * np.dot(dps_c_mid, k)
-  return np.array(fit_4th_order_polynomial(y0, y1, y_mid, k[0], k[-1], dt))
-
 def interp_fit_bosh(y0, y1, k, dt):
     """Fit an interpolating polynomial to the results of a Runge-Kutta step."""
     bs_c_mid = np.array([0., 0.5, 0., 0.])
-    y_mid = y0 + dt * np.dot(bs_c_mid, k)
-    return np.array(fit_4th_order_polynomial(y0, y1, y_mid, k[0], k[-1], dt))
-
-def interp_fit_heun(y0, y1, k, dt):
-    """Fit an interpolating polynomial to the results of a Runge-Kutta step."""
-    # from torchdiffeq
-    bs_c_mid = np.array([0.5, 0])
     y_mid = y0 + dt * np.dot(bs_c_mid, k)
     return np.array(fit_4th_order_polynomial(y0, y1, y_mid, k[0], k[-1], dt))
 
@@ -103,36 +73,6 @@ def initial_step_size(fun, t0, y0, order, rtol, atol, f0):
 
   return np.minimum(100. * h0, h1)
 
-def runge_kutta_step(func, y0, f0, t0, dt):
-  # Dopri5 Butcher tableaux
-  alpha = np.array([1 / 5, 3 / 10, 4 / 5, 8 / 9, 1., 1., 0])
-  beta = np.array([
-      [1 / 5, 0, 0, 0, 0, 0, 0],
-      [3 / 40, 9 / 40, 0, 0, 0, 0, 0],
-      [44 / 45, -56 / 15, 32 / 9, 0, 0, 0, 0],
-      [19372 / 6561, -25360 / 2187, 64448 / 6561, -212 / 729, 0, 0, 0],
-      [9017 / 3168, -355 / 33, 46732 / 5247, 49 / 176, -5103 / 18656, 0, 0],
-      [35 / 384, 0, 500 / 1113, 125 / 192, -2187 / 6784, 11 / 84, 0]
-  ])
-  c_sol = np.array([35 / 384, 0, 500 / 1113, 125 / 192, -2187 / 6784, 11 / 84, 0])
-  c_error = np.array([35 / 384 - 1951 / 21600, 0, 500 / 1113 - 22642 / 50085,
-                      125 / 192 - 451 / 720, -2187 / 6784 - -12231 / 42400,
-                      11 / 84 - 649 / 6300, -1. / 60.])
-
-  def body_fun(i, k):
-    ti = t0 + dt * alpha[i-1]
-    yi = y0 + dt * np.dot(beta[i-1, :], k)
-    ft = func(yi, ti)
-    return ops.index_update(k, jax.ops.index[i, :], ft)
-
-  k = ops.index_update(np.zeros((7, f0.shape[0])), ops.index[0, :], f0)
-  k = lax.fori_loop(1, 7, body_fun, k)
-
-  y1 = dt * np.dot(c_sol, k) + y0
-  y1_error = dt * np.dot(c_error, k)
-  f1 = k[-1]
-  return y1, f1, y1_error, k
-
 def bosh_step(func, y0, f0, t0, dt):
   # Bosh tableau
   alpha = np.array([1/2, 3/4, 1., 0])
@@ -157,265 +97,6 @@ def bosh_step(func, y0, f0, t0, dt):
   y1_error = dt * np.dot(c_error, k)
   f1 = k[-1]
   return y1, f1, y1_error, k
-
-def heun_step(func, y0, f0, t0, dt):
-  # Heun tableau
-  alpha = np.array([1., 0])
-  beta = np.array([
-    [1/2, 0]
-    ])
-  c_sol = np.array([1/2, 1/2])
-  c_error = np.array([1/2 - 1, 1/2])
-
-  def body_fun(i, k):
-    ti = t0 + dt * alpha[i-1]
-    yi = y0 + dt * np.dot(beta[i-1, :], k)
-    ft = func(yi, ti)
-    return ops.index_update(k, jax.ops.index[i, :], ft)
-
-  k = ops.index_update(np.zeros((2, f0.shape[0])), ops.index[0, :], f0)
-  k = lax.fori_loop(1, 2, body_fun, k)
-
-  y1 = dt * np.dot(c_sol, k) + y0
-  y1_error = dt * np.dot(c_error, k)
-  f1 = k[-1]
-  return y1, f1, y1_error, k
-
-def fehlberg_step(func, y0, f0, t0, dt):
-  # Fehlberg tableau
-  alpha = np.array([1/2, 1, 0])
-  beta = np.array([
-    [1/2, 0, 0],
-    [1/256, 255/256, 0]
-    ])
-  c_sol = np.array([1/512, 255/256, 1/512])
-  c_error = np.array([1/512 - 1/256, 0., 1/512])
-
-  def body_fun(i, k):
-    ti = t0 + dt * alpha[i-1]
-    yi = y0 + dt * np.dot(beta[i-1, :], k)
-    ft = func(yi, ti)
-    return ops.index_update(k, jax.ops.index[i, :], ft)
-
-  k = ops.index_update(np.zeros((3, f0.shape[0])), ops.index[0, :], f0)
-  k = lax.fori_loop(1, 3, body_fun, k)
-
-  y1 = dt * np.dot(c_sol, k) + y0
-  y1_error = dt * np.dot(c_error, k)
-  f1 = k[-1]
-  return y1, f1, y1_error, k
-
-def rk_fehlberg_step(func, y0, f0, t0, dt):
-  # Fehlberg tableau
-  alpha = np.array([1/4, 3/8, 12/13, 1, 1/2, 0])
-  beta = np.array([
-    [1/4, 0, 0, 0, 0, 0],
-    [3/32, 9/32, 0, 0, 0, 0],
-    [1932/2197, -7200/2197, 7296/2197, 0, 0, 0],
-    [439/216, -8, 3680/513, -845/4104, 0, 0],
-    [-8/27, 2, -3544/2565, 1859/4104, -11/40, 0]
-    ])
-  c_sol = np.array([16/135, 0, 6656/12825, 28561/56430, -9/50, 2/55])
-  c_error = np.array([16/135 - 25/216, 0, 6656/12825 - 1408/2565, 28561/56430 - 2197/4104, -9/50 - - 1/5, 2/55])
-
-  def body_fun(i, k):
-    ti = t0 + dt * alpha[i-1]
-    yi = y0 + dt * np.dot(beta[i-1, :], k)
-    ft = func(yi, ti)
-    return ops.index_update(k, jax.ops.index[i, :], ft)
-
-  k = ops.index_update(np.zeros((6, f0.shape[0])), ops.index[0, :], f0)
-  k = lax.fori_loop(1, 6, body_fun, k)
-
-  y1 = dt * np.dot(c_sol, k) + y0
-  y1_error = dt * np.dot(c_error, k)
-  f1 = k[-1]
-  return y1, f1, y1_error, k
-
-def cash_karp_step(func, y0, f0, t0, dt):
-  # Cash-Karp tableau
-  alpha = np.array([1/5, 3/10, 3/5, 1, 7/8, 0])
-  beta = np.array([
-    [1/5, 0, 0, 0, 0, 0],
-    [3/40, 9/40, 0, 0, 0, 0],
-    [3/10, -9/10, 6/5, 0, 0, 0],
-    [-11/54, 5/2, -70/27, 35/27, 0, 0],
-    [1631/55296, 175/512, 575/13824, 44275/110592, 253/4096, 0]
-    ])
-  c_sol = np.array([37/378, 0, 250/621, 125/594, 0, 512/1771])
-  c_error = np.array([37/378 - 2825/27648, 0, 250/621 - 18575/48384, 125/594 - 13525/55296, -277/14336, 512/1771 - 1/4])
-
-  def body_fun(i, k):
-    ti = t0 + dt * alpha[i-1]
-    yi = y0 + dt * np.dot(beta[i-1, :], k)
-    ft = func(yi, ti)
-    return ops.index_update(k, jax.ops.index[i, :], ft)
-
-  k = ops.index_update(np.zeros((6, f0.shape[0])), ops.index[0, :], f0)
-  k = lax.fori_loop(1, 6, body_fun, k)
-
-  y1 = dt * np.dot(c_sol, k) + y0
-  y1_error = dt * np.dot(c_error, k)
-  f1 = k[-1]
-  return y1, f1, y1_error, k
-
-def owrenzen_step(func, y0, f0, t0, dt):
-  # Owrenzen tableau
-  alpha = np.array([1/6, 11/37, 11/17, 13/15, 1, 0])
-  beta = np.array([
-    [1/6, 0, 0, 0, 0, 0],
-    [44/1369, 363/1369, 0, 0, 0, 0],
-    [3388/4913, -8349/4913, 8140/4913, 0, 0, 0],
-    [-36764/408375, 767/1125, -32708/136125, 210392/408375, 0, 0],
-    [1697/18876, 0, 50653/116160, 299693/1626240, 3375/11648, 0]
-    ])
-  c_sol = np.array([1697/18876, 0, 50653/116160, 299693/1626240, 3375/11648, 0])
-  c_error = np.array([-1185/6292, 0, 4107/7744, -68493/108416, 3375/11648, 0])
-
-  def body_fun(i, k):
-    ti = t0 + dt * alpha[i-1]
-    yi = y0 + dt * np.dot(beta[i-1, :], k)
-    ft = func(yi, ti)
-    return ops.index_update(k, jax.ops.index[i, :], ft)
-
-  k = ops.index_update(np.zeros((6, f0.shape[0])), ops.index[0, :], f0)
-  k = lax.fori_loop(1, 6, body_fun, k)
-
-  y1 = dt * np.dot(c_sol, k) + y0
-  y1_error = dt * np.dot(c_error, k)
-  f1 = k[-1]
-  return y1, f1, y1_error, k
-
-def owrenzen5_step(func, y0, f0, t0, dt):
-  # Owrenzen5 tableau
-  alpha = np.array([1/6, 1/4, 1/2, 1/2, 9/14, 7/8, 1, 0])
-  beta = np.array([
-    [1/6, 0, 0, 0, 0, 0, 0, 0],
-    [1/16, 3/16, 0, 0, 0, 0, 0, 0],
-    [1/4, -3/4, 1, 0, 0, 0, 0, 0],
-    [-3/4, 15/4, -3, 1/2, 0, 0, 0, 0],
-    [369/1372, -243/343, 297/343, 1485/9604, 297/4802, 0, 0, 0],
-    [-133/4512, 1113/6016, 7945/16544, -12845/24064, -315/24064, 156065/198528, 0, 0],
-    [83/945, 0, 248/825, 41/180, 1/36, 2401/38610, 6016/20475, 0]
-    ])
-  c_sol = np.array([-1/9 + 188/945, 0, 40/33 - 752/825, -7/4 + 89/45, -1/12 + 1/9, 343/198 - 32242/19305, 6016/20475, 0])
-  c_error = np.array([188/945, 0, -752/825, 89/45, 1/9, -32242/19305, 6016/20475, 0])
-
-  def body_fun(i, k):
-    ti = t0 + dt * alpha[i-1]
-    yi = y0 + dt * np.dot(beta[i-1, :], k)
-    ft = func(yi, ti)
-    return ops.index_update(k, jax.ops.index[i, :], ft)
-
-  k = ops.index_update(np.zeros((8, f0.shape[0])), ops.index[0, :], f0)
-  k = lax.fori_loop(1, 8, body_fun, k)
-
-  y1 = dt * np.dot(c_sol, k) + y0
-  y1_error = dt * np.dot(c_error, k)
-  f1 = k[-1]
-  return y1, f1, y1_error, k
-
-def tanyam_step(func, y0, f0, t0, dt):
-  # Tanyam7 tableau
-  alpha = np.array([0.07816646510113846,
-                    0.1172496976517077,
-                    0.17587454647756157,
-                    0.4987401101913988,
-                    0.772121690184484,
-                    0.9911856696047768,
-                    0.9995019582097662,
-                    1,
-                    0,
-                    0])
-  beta = np.array([
-    [0.07816646510113846, 0, 0, 0, 0, 0,
-      0, 0, 0, 0],
-    [0.029312424412926925, 0.08793727323878078, 0, 0, 0, 0,
-      0, 0, 0, 0],
-    [0.04396863661939039, 0, 0.13190590985817116, 0, 0, 0,
-      0, 0, 0, 0],
-    [0.7361834837738382, 0, -2.8337999624233303, 2.5963565888408913, 0, 0,
-      0, 0, 0, 0],
-    [-12.062819391370866, 0, 48.20838100175243, -38.05863046463434, 2.6851905444372632, 0,
-      0, 0, 0, 0],
-    [105.21957276320198, 0, -417.92888626241256, 332.3155504499333, -19.827591183572938, 1.2125399024549859,
-      0, 0, 0, 0],
-    [114.67755718631742, 0, -455.5612169896097, 362.24095553923144, -21.67190442182809, 1.3189132007137807,
-      -0.0048025566150346555, 0, 0, 0],
-    [115.21334870553768, 0, -457.69356568613233, 363.93688218862735, -21.776682078900294, 1.3250670887878468,
-      -0.004518190986768983, -0.0005320269334859959, 0, 0],
-    [115.18928245800194, 0, -457.598022271643, 363.8610256312148, -21.77212754027556, 1.3248804645074317,
-      -0.0045057252106918315, -0.0005330165949429136, 0, 0]
-    ])
-  c_sol = np.array([0.05126014249744686, 0,
-                    0, 0.27521638456212627,
-                    0.33696650340710543, 0.18986072244906577,
-                    8.461099418514403, -130.15941672640542,
-                    121.84501355497527, 0]) +\
-          np.array([0.0002577249070696835, 0,
-                      0, -0.0009229104845391819,
-                      0.0031779013374194105, -0.01210458894174817,
-                      2.706023959472591, -44.541445641266066,
-                      121.84501355497527, -80])
-  c_error = np.array([0.0002577249070696835, 0,
-                      0, -0.0009229104845391819,
-                      0.0031779013374194105, -0.01210458894174817,
-                      2.706023959472591, -44.541445641266066,
-                      121.84501355497527, -80])
-
-  def body_fun(i, k):
-    ti = t0 + dt * alpha[i-1]
-    yi = y0 + dt * np.dot(beta[i-1, :], k)
-    ft = func(yi, ti)
-    return ops.index_update(k, jax.ops.index[i, :], ft)
-
-  k = ops.index_update(np.zeros((10, f0.shape[0])), ops.index[0, :], f0)
-  k = lax.fori_loop(1, 10, body_fun, k)
-
-  y1 = dt * np.dot(c_sol, k) + y0
-  y1_error = dt * np.dot(c_error, k)
-  f1 = k[-1]
-  return y1, f1, y1_error, k
-
-def _g_and_explicit_phi(prev_t, next_t, implicit_phi, k):
-  curr_t = prev_t[0]
-  dt = next_t - prev_t[0]
-
-  beta = 1.
-
-  explicit_phi = np.zeros_like(implicit_phi)
-  explicit_phi = jax.ops.index_update(explicit_phi, 0, implicit_phi[0])
-
-  c = 1 / np.arange(1, _ADAMS_MAX_ORDER + 2)
-
-  g = np.zeros(_ADAMS_MAX_ORDER + 1)
-  g = jax.ops.index_update(g, 0, 1)
-
-  def body_fun(i, val):
-    beta, explicit_phi, c, g = val
-
-    beta = (next_t - prev_t[i - 1]) / (curr_t - prev_t[i]) * beta
-    explicit_phi = jax.ops.index_update(explicit_phi, i, implicit_phi[i] * beta)
-
-    idxs = np.arange(_ADAMS_MAX_ORDER + 1)
-    c_q = np.where(idxs < k - i + 1, c, 0)   # c[:k - i + 1]
-    c_q_1 = np.where(idxs < k + 1 - i + 1, np.where(idxs >= 1, c, 0), 0)  # c[1:k + 1 - i + 1]
-    # shift so that it lines up with diff1
-    c_q_1 = jax.ops.index_update(c_q_1, jax.ops.index[:-1], c_q_1[1:])
-    # c[:k - i + 1] - c[1:k + 1 - i + 1]
-    c = lax.cond(i == 1, None, lambda _: c_q - c_q_1, None, lambda _: c_q - c_q_1 * dt / (next_t - prev_t[i - 1]))
-    g = jax.ops.index_update(g, i, c[0])
-
-    val = beta, explicit_phi, c, g
-    return val
-
-  beta, explicit_phi, c, g = lax.fori_loop(1, k, body_fun, (beta, explicit_phi, c, g))
-
-  # do the c and g update for i = k
-  c = jax.ops.index_update(c, jax.ops.index[:1], c[:1] - c[1:2] * dt / (next_t - prev_t[k - 1]))
-  g = jax.ops.index_update(g, k, c[0])
-
-  return g, explicit_phi
 
 def _compute_implicit_phi(explicit_phi, f_n, phi_order, k):
   k = lax.min(phi_order + 1, k)
