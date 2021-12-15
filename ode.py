@@ -1701,83 +1701,10 @@ def _odeint_sepaux2_rev(fwd_func, rev_func, rtol, atol, mxstep, res, g):
   unravel = ravel_pytree(tree_map(op.itemgetter(0), res[0]))[1]
   return (nfe, unravel(result[0]), *result[1:])
 
-methods = {
-  "dopri5": _dopri5_odeint,
-  "adams": _adams_odeint
-}
-_dopri5_odeint.defvjp(_odeint_fwd, _odeint_rev)
-_rk4_odeint.defvjp(_rk4_odeint_fwd, _rk4_odeint_rev)
-_rk4_odeint_sepaux.defvjp(_rk4_odeint_sepaux_fwd, _rk4_odeint_sepaux_rev)
-_rk4_odeint_sepaux_one.defvjp(_rk4_odeint_sepaux_one_fwd, _rk4_odeint_sepaux_one_rev)
-_rk4_odeint_aux.defvjp(_rk4_odeint_aux_fwd, _rk4_odeint_aux_rev)
-_dopri5_odeint_aux_one.defvjp(_odeint_aux_one_fwd, _odeint_aux_one_rev)
-_dopri5_odeint_sepaux.defvjp(_odeint_sepaux_fwd, _odeint_sepaux_rev)
-_dopri5_odeint_fin_sepaux.defvjp(_odeint_fin_sepaux_fwd, _odeint_sepaux_rev)
-_dopri5_odeint_sepaux2.defvjp(_odeint_sepaux2_fwd, _odeint_sepaux2_rev)
-# _dopri5_odeint_aux.defvjp(_odeint_aux_fwd, _odeint_aux_rev)
-# _adams_odeint.defvjp(partial(_odeint_fwd, _adams_odeint), partial(_odeint_rev, "adams"))
 
-def pend(np, y, _, m, g):
-  theta, omega = y
-  return [omega, -m * omega - g * np.sin(theta)]
 
-def benchmark_odeint(fun, y0, tspace, *args, **kwargs):
-  """Time performance of JAX odeint method against scipy.integrate.odeint."""
-  n_trials = 10
-  n_repeat = 100
-  y0, tspace = onp.array(y0), onp.array(tspace)
-  onp_fun = partial(fun, onp)
-  scipy_times = []
-  for k in range(n_trials):
-    start = time.time()
-    for _ in range(n_repeat):
-      scipy_result = osp_integrate.odeint(onp_fun, y0, tspace, args)
-    end = time.time()
-    print('scipy odeint elapsed time ({} of {}): {}'.format(k+1, n_trials, end-start))
-    scipy_times.append(end - start)
-  scipy_result, infodict = osp_integrate.odeint(onp_fun, y0, tspace, args,
-                                                full_output=True,
-                                                rtol=kwargs["rtol"],
-                                                atol=kwargs["atol"])
-  sc_nfe = infodict["nfe"][-1]
-  y0, tspace = np.array(y0), np.array(tspace)
-  jax_fun = partial(fun, np)
-  jax_times = []
-  for k in range(n_trials):
-    start = time.time()
-    for _ in range(n_repeat):
-      jax_result, jax_nfe = odeint(jax_fun, y0, tspace, *args, **kwargs)
-    jax_result.block_until_ready()
-    end = time.time()
-    print('JAX odeint elapsed time ({} of {}): {}'.format(k+1, n_trials, end-start))
-    jax_times.append(end - start)
-  print('(avg scipy time) / (avg jax time) = {}'.format(
-      onp.mean(scipy_times[1:]) / onp.mean(jax_times[1:])))
-  print('norm(scipy result-jax result): {}'.format(
-      np.linalg.norm(np.asarray(scipy_result) - jax_result)))
-  print("jax nfe, scipy nfe", jax_nfe, sc_nfe)
-  return scipy_result, jax_result
 
-def pend_benchmark_odeint(**kwargs):
-  _, _ = benchmark_odeint(pend, [np.pi - 0.1, 0.0], np.linspace(0., 10., 2),
-                          0.25, 9.8, **kwargs)
 
-def pend_check_grads():
-  def f(y0, ts, *args):
-    return odeint(partial(pend, np), y0, ts, *args)[0]
-
-  y0 = [np.pi - 0.1, 0.0]
-  ts = np.linspace(0., 1., 11)
-  args = (0.25, 9.8)
-
-  check_grads(f, (y0, ts, *args), modes=["rev"], order=2,
-              atol=1e-1, rtol=1e-1)
-
-def _max_abs(tensor):
-    return np.max(np.abs(tensor))
-
-def _rel_error(true, estimate):
-    return _max_abs((true - estimate) / true)
 
 
 
