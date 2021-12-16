@@ -146,7 +146,7 @@ def _odeint_wrapper(func, rtol, atol, mxstep, y0, ts, *args):
   y0, unravel = ravel_pytree(y0)
   func = ravel_first_arg(func, unravel)
   out, nfe = _bosh_odeint(func, rtol, atol, mxstep, y0, ts, *args)
-  return jax.vmap(unravel)(out), nfe
+  return jax.vmap(unravel)(out)
 
 def _bosh_odeint(func, rtol, atol, mxstep, y0, ts, *args):
   func_ = lambda y, t: func(y, t, *args)
