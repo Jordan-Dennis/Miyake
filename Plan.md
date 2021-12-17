@@ -4,3 +4,9 @@ The idea would be to minimize the number of free parameters that were in the pro
 
 Using this production function I could then simulate a number of Miyake events with different parameters and shapes. The shape of the event, i.e. super-gaussian, rectangle, lorentzian, ect. could have a major impact on the viability of the model. This could probably be done using the `ticktack` fitters. However, I wanted to try and combine the data by normalising it first. I need to consider the distribution of the $C14$ data before hand and this can be done using some density plots.
 
+## Implementation
+I have the choice of $4$ programming languages. _R_, _Python_, _Julia_ and _LuaJIT_. I would learn the most using _LuaJIT_ or _Julia_. I like _Gadfly_ from _Julia_ but would also like some more experience using _Matplotlib_ and _Pandas_ from _Python_. If I used _Python_ I would have access to the _Ticktack_ tools which would greatly reduce the amount of work that I had to do. 
+
+I might start off by generating a denisity plot of the $C14$ data from the different studies and then go about looking at normalisation. I can normalise via the mean, median and mode. I should do so research into which of these methods is best in each case.
+
+Turns out that there is a normalisation formula so I will begin with researching this.
