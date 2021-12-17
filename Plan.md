@@ -7,6 +7,47 @@ Using this production function I could then simulate a number of Miyake events w
 ## Implementation
 I have the choice of $4$ programming languages. _R_, _Python_, _Julia_ and _LuaJIT_. I would learn the most using _LuaJIT_ or _Julia_. I like _Gadfly_ from _Julia_ but would also like some more experience using _Matplotlib_ and _Pandas_ from _Python_. If I used _Python_ I would have access to the _Ticktack_ tools which would greatly reduce the amount of work that I had to do. 
 
+I will take time and chose the right tool for the job. This will need to be objective goddammit.
+
+### Python:
+ - #### Pros
+     - Ben will be able to help.
+     - _Ticktack_ is available with existing implementations.
+     - Widely used in industry.
+     - Will have the opportunity to improve my skill with the libraries of _Scipy_.
+ - #### Cons
+     - I'm not a huge fan of _Python_ for numerical code.
+     - Code will be slow.
+     - I could learn more using other languages
+
+### R:
+ - #### Pros
+     - Excellent programming experience for data science.
+         - Piplines `%>%`
+         - `ggplot2` for fast density plots
+ - #### Cons
+     - Slow
+     - Ben will not be able to help 
+     - Increasingly not used in industry
+
+### Julia:
+ - #### Pros
+     - Statically typed
+     - Fast 
+     - I would a similar amount to python
+     - Increasingly used in industry 
+ - #### Cons
+     - Ben could not help
+
+### LuaJIT
+ - #### Pros
+     - Very fast 
+     - I would learn the most using LuaJIT
+ - #### Cons
+     - Barely used in industry 
+     - Ben would not help 
+     - Very limited ecosystem
+
 I might start off by generating a denisity plot of the $C14$ data from the different studies and then go about looking at normalisation. I can normalise via the mean, median and mode. I should do so research into which of these methods is best in each case.
 
 Turns out that there is a normalisation formula so I will begin with researching this.
