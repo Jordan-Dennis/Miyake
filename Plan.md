@@ -50,6 +50,14 @@ I will take time and chose the right tool for the job. This will need to be obje
 
 I think that I can rule out _R_ since the loop implementation is poor. _R_ is strongest for investigating data in a vectorised way and not when it comes to simulations and numerical code. __I need to fact check that _R_ has a relatively poor array implementation__. I could choose to use _R_ for the exploratory analysis and then switch to _Julia_ for the numerical code. I kind of like this idea and it is supported by _Jupyter_ so that makes it very easy. At the moment I am leaning towards _Julia_ or a combination/comparison. Using _Julia_ for a very complex carbon box model would allow me the freedom to develop my own code instead of using _Ticktack_. 
 
+An interesting idea would be to compare many differently sized CBMs and see if I could identify an ideal size.
+
 I might start off by generating a denisity plot of the $C14$ data from the different studies and then go about looking at normalisation. I can normalise via the mean, median and mode. I should do so research into which of these methods is best in each case.
 
 Turns out that there is a normalisation formula so I will begin with researching this.
+
+Another thing would be to do a fourier analysis of the production function. The psuedo-code would be something like this.
+ - Generate a sinusoid with 2 parameters, amplitude and phase. 
+ - Minimise the $\chi^{2}$ statistic using gradient descent of each parameter.
+ - Add another sinusoidal term until some cut-off $\chi^{2}$ is reached.
+A problem wih this method is it is a local analytical solution that cannot be used to extrapolate and which does not have physical significance.
