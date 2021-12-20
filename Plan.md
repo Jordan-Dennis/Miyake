@@ -72,7 +72,7 @@ So the plan for today:
      - `.jl`
      - `.r`
  - As well as this I might also have minimal running environments/directories
-     - These will have a name formatted `like julia_ode_profiles`.
+     - These will have a name formatted like `julia_ode_profiles`.
  - In terms of my actual programming goals for today
      - I want to have a function `get_residual_distribution`, which will use `mcmc` to determine the noise around the simulated model. I will define another function within this namespace called `get_production_function`, which will use the single fitter type events to generate the ideal production function from which the residuals and their distribution can be calculated.
      - Next I will have a function `simulate_event` which will do just that. I'm not sure about the parameters but it will use the error distribution calculated by `get_residual_distribution` (not sure how this will work) and the production function determined by `get_production_function` to generate a simulated data set with an event.
@@ -92,3 +92,6 @@ So the plan for today:
 A class could work quite well here. `set_model` would let me chose the `.hd5` file to get the model from. `set_data` would let me chose the data set and the rest could be done using the functions above.
 
 There is already bloat and I want to simulate more or less all of the cases so I might as well use a double nested `for` loop.
+
+#### Another Goal
+ - I might try and webscrape the data from the `github` repository so that I do not need to go through the trouble of downloading it.
