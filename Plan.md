@@ -65,12 +65,12 @@ A problem wih this method is it is a local analytical solution that cannot be us
 So the plan for today:
  - I need to sort out my directory.
  - I think I will go with the .file_ext
-     - .csv
-     - .ipynb
-     - .hd5
-     - .py
-     - .jl
-     - .r
+     - `.csv`
+     - `.ipynb`
+     - `.hd5`
+     - `.py`
+     - `.jl`
+     - `.r`
  - As well as this I might also have minimal running environments/directories
      - These will have a name formatted `like julia_ode_profiles`.
  - In terms of my actual programming goals for today
