@@ -61,3 +61,39 @@ Another thing would be to do a fourier analysis of the production function. The 
  - Minimise the $\chi^{2}$ statistic using gradient descent of each parameter.
  - Add another sinusoidal term until some cut-off $\chi^{2}$ is reached.
 A problem wih this method is it is a local analytical solution that cannot be used to extrapolate and which does not have physical significance.
+
+So the plan for today:
+ - I need to sort out my directory.
+ - I think I will go with the .file_ext
+     - `.csv`
+     - `.ipynb`
+     - `.hd5`
+     - `.py`
+     - `.jl`
+     - `.r`
+ - As well as this I might also have minimal running environments/directories
+     - These will have a name formatted like `julia_ode_profiles`.
+ - In terms of my actual programming goals for today
+     - I want to have a function `get_residual_distribution`, which will use `mcmc` to determine the noise around the simulated model. I will define another function within this namespace called `get_production_function`, which will use the single fitter type events to generate the ideal production function from which the residuals and their distribution can be calculated.
+     - Next I will have a function `simulate_event` which will do just that. I'm not sure about the parameters but it will use the error distribution calculated by `get_residual_distribution` (not sure how this will work) and the production function determined by `get_production_function` to generate a simulated data set with an event.
+     - I will have a function `get_event` which will use some form of statistical analysis to detect the event with some degree of certainty.
+     - The basic usage will be:
+         - loop over the datasets using `for data_file in list(data_files):`
+             - loop over the models using `for model_file in list(model_files):`
+                 - `load_data` into global namespace
+                 - Use `load_presaved_model` for a model 
+                 - Use `get_production_function` to determine the model
+                 - Use `get_residual_distribution` to determine the sampling distribution
+                 - loop over a range of widths using `for width in list(widths):`
+                     - loop over a range of heights using `for height in list(heights):`
+                         - Use `get_event` to simulate and event with the parameters `width` and `height`.
+                         - Construct a contour plot using `plotnine` of the peak measure within the parameter space and save it as a `.pdf` 
+
+A class could work quite well here. `set_model` would let me chose the `.hd5` file to get the model from. `set_data` would let me chose the data set and the rest could be done using the functions above.
+
+There is already bloat and I want to simulate more or less all of the cases so I might as well use a double nested `for` loop.
+
+I will need another for loop for the shape. This might take some time to run depending on the the amount of datasets that I want to draw my simulations from. Man I am keen to either have this program scape my directory manually or web scrape manually
+
+#### Another Goal
+ - I might try and webscrape the data from the `github` repository so that I do not need to go through the trouble of downloading it.
