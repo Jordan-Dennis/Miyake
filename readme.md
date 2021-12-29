@@ -9,10 +9,10 @@
          - Nicely formatted map of the directory 
  - I need to make my repo public following the improvements
 
-# Naming conventions
-I need too work out what the overall name of the final product repository will be. `github` recommends something simple and memeorable like `golden octopus` but I want the name to be informative. Basically I am after a statment of the aims. What are my aims? Perhaps I should diversify and have more than one `github` repo for the project. So everything feels like a tree right now that I have taken a step back. The aim is also a tree with a broad overaching main aim and many smaller sub aims. The main aim can be broken down into implementation aims, which are to do with improving the tools available and investiagtion aims, which deal with the inference of parameters about the event. 
+## Goals: 
 
-#### Aim:
+
+## Aims:
 ```
 Investigate Miyake events:
     | Investigation
@@ -24,8 +24,7 @@ Investigate Miyake events:
     |   | Profile the bosh solver against the JAX odeint for each model              
 ```
 
-I might stick with the name `Miyake` for now. OK so what is next? File names... I need a system of naming the files that should be consistent given my system of organising the files. `profiler.jl` is a bad name, but so is `plan_for_mcmc_profiles`. The directory will tell me the logical bracket of the files, i.e. `mcmc_profiles`. OK ... The basic directory plan should be something like the following map:
-
+## Organisation:
 ```
 logical_division (Taken from aims:)
     | plan.md
@@ -41,7 +40,4 @@ logical_division (Taken from aims:)
     |   | model.hd5
 ```
 
-                        
-# File organisations
-So there are multiple possibilities here. I could chose to do my usual `.`extension system. The advantages are it is easy to find the files that you need. The dissadvantages arrise when loading the files from different directories. Another system would be logical divisions. By this I meen grouping files as `datasets`, `notebooks`, ect. This system and the one above could end up being very similar in structure. I think I prefer the second one a little more `pictures` could include any graphics but `.pdf` might be LaTex reports or `Gadfly` plots. A final one might be to have an environmental structure. `Julia ODE Suite Profiles` which contains all the files needed for that particular aspect in a single place and only those files. I could combine this with the second approach to yield a system that compartmentalised the directory first upon the purpose and then upon the files.  
 
