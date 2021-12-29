@@ -54,7 +54,14 @@ for model in models:
             hessian_profile::DataFrame = profile_function(ForwardDiff.hessain::Function, (parameters::Vector{Float64}, chi_squared::Function))
 ```
 
-The goal is to have what as an output. 
+The goal is to have what as an output. I want a `DataFrame` but what will it look like?
+
+```
+DataFrame:
+model::String | dataset::String | solver::String | time::Float64 | time_error::Float64 | accuracy::Float64 | accuracy_error::Float64
+```
+
+Alternately I could just have a fucking huge `DataFrame` with all of the time runs. I really want a better system for the accuracy though.
 
 # MCMC 
 So I want to go looking for python implementations of `mcmc` outside of `emcee` and profile them on the different models. This should allow me to reduce the run time of my code considerably.
