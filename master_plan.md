@@ -24,7 +24,22 @@ Investigate Miyake events:
     |   | Profile the bosh solver against the JAX odeint for each model              
 ```
 
-I might stick with the name `Miyake` for now. OK so what is next? File names... I need a system of naming the files that should be consistent given my system of organising the files. 
+I might stick with the name `Miyake` for now. OK so what is next? File names... I need a system of naming the files that should be consistent given my system of organising the files. `profiler.jl` is a bad name, but so is `plan_for_mcmc_profiles`. The directory will tell me the logical bracket of the files, i.e. `mcmc_profiles`. OK ... The basic directory plan should be something like the following map:
+
+```
+logical_division (Taken from aims:)
+    | plan.md
+    | logical_division.ipynb
+    | figures.pdf
+    |
+    | datasets (dir)
+    |   | year
+    |   |   | hemisphere
+    |   |   |   | data_set.csv
+    |
+    | models (dir)
+    |   | model.hd5
+```
 
                         
     
