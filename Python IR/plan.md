@@ -95,7 +95,4 @@ There is already bloat and I want to simulate more or less all of the cases so I
 
 I will need another for loop for the shape. This might take some time to run depending on the the amount of datasets that I want to draw my simulations from. Man I am keen to either have this program scape my directory manually or web scrape manually
 
-#### Another Goal
- - I might try and webscrape the data from the `github` repository so that I do not need to go through the trouble of downloading it.
-
-
+# Plan
