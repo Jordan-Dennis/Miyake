@@ -31,4 +31,4 @@ def correct_sign(row):
 
 annual_res = annual_res.apply(correct_sign, axis=1) # Fixing the signs
 
-concat([mixed_res, annual_res]).to_csv("IR_Data.csv")
+concat([mixed_res, annual_res]).to_csv("IR_Data.csv", index=False)
