@@ -14,7 +14,7 @@ with open("raw_intcal20.txt", "r") as raw_intcal20, \
         if entries[0] == "cal":
             continue    # If the title col return to the top of the loop
 
-        elif float(entries[0]) < 1750:  # Getting only the years of interest 
+        if -5446.0 < float(entries[0]) < 1750:  # Getting only the years of interest 
             entries = map(add, entries, LINE_DELIMS)    # Adding correct delims
 
             for entry in entries:   # Writing to the file 
