@@ -5,7 +5,7 @@ LINE_DELIMS = [",", ",", "\n"]  # The delimeters for the columns of the .csv
 with open("raw_intcal20.txt", "r") as raw_intcal20, \
     open("Intcal20.csv", "w") as pruned_intcal20:   # Opening the files
 
-    pruned_intcal20.write("cal,d14c,sig_d14c\n")  # Writing the col titles
+    pruned_intcal20.write("year,d14c,sig_d14c\n")  # Writing the col titles
 
     for line in raw_intcal20:   # Looping through the file maintaining lazy iterator status
         entries = line.split(" ")   # Breaking at the current delim 
