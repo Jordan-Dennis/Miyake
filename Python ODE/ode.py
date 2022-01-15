@@ -141,7 +141,7 @@ def odeint(func, y0, t, *args, rtol=1.4e-8, atol=1.4e-8, mxstep=np.inf):
   """
   return _odeint_wrapper(func, rtol, atol, mxstep, y0, t, *args)
 
-@partial(jax.jit, static_argnums=(0, 1, 2, 3))
+@partial(jax.jit, static_argnums=(0, 3))
 def _odeint_wrapper(func, rtol, atol, mxstep, y0, ts, *args):
   y0, unravel = ravel_pytree(y0)
   func = ravel_first_arg(func, unravel)
